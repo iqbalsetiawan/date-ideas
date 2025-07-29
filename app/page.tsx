@@ -1,103 +1,164 @@
-import Image from "next/image";
+'use client'
+
+import { useEffect, useState, useMemo, useCallback, memo } from 'react'
+import { useStore } from '@/lib/store'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ItemForm } from '../components/item-form'
+import { TypeForm } from '../components/type-form'
+import { ItemTable } from '../components/item-table'
+import { ToastContainer } from '@/components/ui/toast'
+import { LoadingOverlay, TableLoadingSkeleton } from '@/components/loading'
+import { Plus, Settings } from 'lucide-react'
+
+// Memoized components for better performance
+const MemoizedItemTable = memo(ItemTable)
+const MemoizedItemForm = memo(ItemForm)
+const MemoizedTypeForm = memo(TypeForm)
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const { fetchItems, fetchTypes, items, types, loading, error, toasts, removeToast } = useStore()
+  const [showItemForm, setShowItemForm] = useState(false)
+  const [showTypeForm, setShowTypeForm] = useState(false)
+  const [activeTab, setActiveTab] = useState('food')
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    fetchItems()
+    fetchTypes()
+  }, [fetchItems, fetchTypes])
+
+  // Memoized filtered data to prevent unnecessary re-computations
+  const { foodItems, placeItems, foodTypes, placeTypes } = useMemo(() => {
+    return {
+      foodItems: items.filter(item => item.category === 'food'),
+      placeItems: items.filter(item => item.category === 'place'),
+      foodTypes: types.filter(type => type.category === 'food'),
+      placeTypes: types.filter(type => type.category === 'place')
+    }
+  }, [items, types])
+
+  // Memoized callbacks to prevent unnecessary re-renders
+  const handleShowItemForm = useCallback(() => setShowItemForm(true), [])
+  const handleHideItemForm = useCallback(() => setShowItemForm(false), [])
+  const handleShowTypeForm = useCallback(() => setShowTypeForm(true), [])
+  const handleHideTypeForm = useCallback(() => setShowTypeForm(false), [])
+  const handleTabChange = useCallback((value: string) => setActiveTab(value), [])
+
+  return (
+    <div className="container mx-auto p-6 max-w-7xl">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Date Ideas</h1>
+          <p className="text-muted-foreground mt-2">
+            Manage your list of places to visit and food to try
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleShowTypeForm}
+            disabled={loading}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Manage Types
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleShowItemForm}
+            disabled={loading}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add New
+          </Button>
+        </div>
+      </div>
+
+      {error && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 text-orange-800">
+              <div className="text-sm">
+                <strong>Configuration needed:</strong> {error}
+              </div>
+            </div>
+            {error.includes('Supabase credentials') && (
+              <div className="mt-2 text-xs text-orange-700">
+                1. Copy .env.local.example to .env.local<br/>
+                2. Add your Supabase project URL and anon key<br/>
+                3. Run the SQL schema in your Supabase dashboard<br/>
+                4. Restart the development server
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      <LoadingOverlay isLoading={loading && items.length === 0} loadingText="Loading your date ideas...">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="food">Food ({foodItems.length})</TabsTrigger>
+            <TabsTrigger value="place">Places ({placeItems.length})</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="food" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Food to Try</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loading && foodItems.length === 0 ? (
+                  <TableLoadingSkeleton />
+                ) : (
+                  <MemoizedItemTable 
+                    items={foodItems} 
+                    types={foodTypes}
+                    category="food"
+                    loading={loading}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="place" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Places to Visit</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loading && placeItems.length === 0 ? (
+                  <TableLoadingSkeleton />
+                ) : (
+                  <MemoizedItemTable 
+                    items={placeItems} 
+                    types={placeTypes}
+                    category="place"
+                    loading={loading}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </LoadingOverlay>
+
+      <MemoizedItemForm
+        open={showItemForm}
+        onOpenChange={handleHideItemForm}
+        category={activeTab as 'food' | 'place'}
+        types={activeTab === 'food' ? foodTypes : placeTypes}
+      />
+
+      <MemoizedTypeForm
+        open={showTypeForm}
+        onOpenChange={handleHideTypeForm}
+        types={types}
+        items={items}
+      />
+      
+      <ToastContainer toasts={toasts} onClose={removeToast} />
     </div>
-  );
+  )
 }
