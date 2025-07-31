@@ -16,23 +16,19 @@ interface Store {
   error: string | null
   toasts: Toast[]
   
-  // Items actions
   fetchItems: () => Promise<void>
   addItem: (item: ItemInsert) => Promise<void>
   updateItem: (id: number, item: Partial<Item>) => Promise<void>
   deleteItem: (id: number) => Promise<void>
   
-  // Types actions
   fetchTypes: () => Promise<void>
   addType: (type: TypeInsert) => Promise<void>
   updateType: (id: number, type: Partial<Type>) => Promise<void>
   deleteType: (id: number) => Promise<void>
   
-  // Toast actions
   addToast: (toast: Omit<Toast, 'id'>) => void
   removeToast: (id: string) => void
   
-  // Utility actions
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
 }

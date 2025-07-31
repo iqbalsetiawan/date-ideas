@@ -33,7 +33,6 @@ export function TypeForm({ open, onOpenChange, types, items }: TypeFormProps) {
       return
     }
 
-    // Check for duplicate type name in the same category
     const duplicateType = types.find(type => 
       type.name.toLowerCase() === formData.name.toLowerCase() && 
       type.category === formData.category &&
@@ -73,7 +72,6 @@ export function TypeForm({ open, onOpenChange, types, items }: TypeFormProps) {
   }
 
   const handleDelete = async (id: number) => {
-    // Check if any items are using this type
     const itemsUsingType = items.filter(item => item.type_id === id)
     
     if (itemsUsingType.length > 0) {
@@ -107,7 +105,6 @@ export function TypeForm({ open, onOpenChange, types, items }: TypeFormProps) {
         </DialogHeader>
         
         <div className="space-y-6">
-          {/* Add/Edit Form */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">
@@ -162,7 +159,6 @@ export function TypeForm({ open, onOpenChange, types, items }: TypeFormProps) {
             </CardContent>
           </Card>
 
-          {/* Food Types */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Food Types ({foodTypes.length})</CardTitle>
@@ -202,7 +198,6 @@ export function TypeForm({ open, onOpenChange, types, items }: TypeFormProps) {
             </CardContent>
           </Card>
 
-          {/* Place Types */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Place Types ({placeTypes.length})</CardTitle>

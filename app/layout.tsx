@@ -6,7 +6,7 @@ import "./globals.css";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
-  display: "swap", // Performance: swap font display for better loading
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -91,17 +91,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Preconnect to external domains for performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        
-        {/* PWA manifest */}
         <link rel="manifest" href="/manifest.json" />
-        
-        {/* Apple touch icon */}
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
-        
-        {/* Security headers */}
         <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
         <meta httpEquiv="Referrer-Policy" content="origin-when-cross-origin" />
       </head>

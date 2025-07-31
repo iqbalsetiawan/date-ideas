@@ -12,7 +12,6 @@ import { ToastContainer } from '@/components/ui/toast'
 import { LoadingOverlay, TableLoadingSkeleton } from '@/components/loading'
 import { Plus, Settings } from 'lucide-react'
 
-// Memoized components for better performance
 const MemoizedItemTable = memo(ItemTable)
 const MemoizedItemForm = memo(ItemForm)
 const MemoizedTypeForm = memo(TypeForm)
@@ -28,7 +27,6 @@ export default function Home() {
     fetchTypes()
   }, [fetchItems, fetchTypes])
 
-  // Memoized filtered data to prevent unnecessary re-computations
   const { foodItems, placeItems, foodTypes, placeTypes } = useMemo(() => {
     return {
       foodItems: items.filter(item => item.category === 'food'),
@@ -38,7 +36,6 @@ export default function Home() {
     }
   }, [items, types])
 
-  // Memoized callbacks to prevent unnecessary re-renders
   const handleShowItemForm = useCallback(() => setShowItemForm(true), [])
   const handleHideItemForm = useCallback(() => setShowItemForm(false), [])
   const handleShowTypeForm = useCallback(() => setShowTypeForm(true), [])
