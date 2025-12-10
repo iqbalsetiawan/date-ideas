@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useStore } from '@/lib/store'
 import { Item, Type } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { MapPin, ExternalLink } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Form, FormField, FormItem, FormLabel as RHFLabel, FormControl, FormMessage } from '@/components/ui/form'
+import { itemSchema, type ItemFormValues } from '@/lib/validation'
 
 interface ItemFormProps {
   open: boolean
@@ -21,76 +25,65 @@ interface ItemFormProps {
 
 export function ItemForm({ open, onOpenChange, category, types, item }: ItemFormProps) {
   const { addItem, updateItem, loading } = useStore()
-  const [formData, setFormData] = useState({
-    nama: '',
-    type_id: '',
-    lokasi: '',
-    link: '',
-    status: false
+  const form = useForm<ItemFormValues>({
+    resolver: zodResolver(itemSchema),
+    defaultValues: { nama: '', type_id: '', lokasi: '', link: '', status: false },
+    mode: 'onSubmit',
   })
 
   useEffect(() => {
-    if (item) {
-      setFormData({
+    if (item && open) {
+      form.reset({
         nama: item.nama,
         type_id: item.type_id.toString(),
         lokasi: item.lokasi,
         link: item.link || '',
-        status: item.status
-      })
-    } else {
-      setFormData({
-        nama: '',
-        type_id: '',
-        lokasi: '',
-        link: '',
-        status: false
+        status: item.status,
       })
     }
-  }, [item, open])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!formData.nama || !formData.type_id || !formData.lokasi) {
-      return
+    if (!item && open) {
+      form.reset({ nama: '', type_id: '', lokasi: '', link: '', status: false })
     }
+  }, [item, open, form])
 
+  const onSubmit = async (values: ItemFormValues) => {
     try {
       if (item) {
         await updateItem(item.id, {
-          nama: formData.nama,
-          type_id: parseInt(formData.type_id),
-          lokasi: formData.lokasi,
-          link: formData.link || null,
-          status: formData.status
+          nama: values.nama,
+          type_id: parseInt(values.type_id),
+          lokasi: values.lokasi,
+          link: values.link || null,
+          status: values.status,
         })
       } else {
         await addItem({
-          nama: formData.nama,
-          type_id: parseInt(formData.type_id),
-          lokasi: formData.lokasi,
-          link: formData.link || null,
-          status: formData.status,
-          category
+          nama: values.nama,
+          type_id: parseInt(values.type_id),
+          lokasi: values.lokasi,
+          link: values.link || null,
+          status: values.status,
+          category,
         })
       }
       onOpenChange(false)
     } catch (error) {
-      console.error('Error saving item:', error)
+      console.error(error)
     }
   }
 
   const openGoogleMaps = () => {
-    if (formData.lokasi) {
-      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(formData.lokasi)}`
+    const lokasi = form.getValues('lokasi')
+    if (lokasi) {
+      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lokasi)}`
       window.open(url, '_blank')
     }
   }
 
   const openLink = () => {
-    if (formData.link) {
-      window.open(formData.link, '_blank')
+    const link = form.getValues('link')
+    if (link) {
+      window.open(link, '_blank')
     }
   }
 
@@ -102,108 +95,110 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
             {item ? 'Edit' : 'Add New'} {category === 'food' ? 'Food' : 'Place'}
           </DialogTitle>
         </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="nama">Name</Label>
-            <Input
-              id="nama"
-              value={formData.nama}
-              onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
-              placeholder={`Enter ${category} name`}
-              required
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="nama"
+              render={({ field }) => (
+                <FormItem>
+                  <RHFLabel>Name</RHFLabel>
+                  <FormControl>
+                    <Input placeholder={`Enter ${category} name`} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="type">Type</Label>
-            <Select
-              value={formData.type_id}
-              onValueChange={(value) => setFormData({ ...formData, type_id: value })}
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent>
-                {types.map((type) => (
-                  <SelectItem key={type.id} value={type.id.toString()}>
-                    {type.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="lokasi">Location</Label>
-            <div className="flex gap-2">
-              <Input
-                id="lokasi"
-                value={formData.lokasi}
-                onChange={(e) => setFormData({ ...formData, lokasi: e.target.value })}
-                placeholder="Enter location"
-                required
-                className="flex-1"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={openGoogleMaps}
-                disabled={!formData.lokasi}
-              >
-                <MapPin className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="link">Link (Optional)</Label>
-            <div className="flex gap-2">
-              <Input
-                id="link"
-                value={formData.link}
-                onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-                placeholder="TikTok, Instagram, or review link"
-                className="flex-1"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={openLink}
-                disabled={!formData.link}
-              >
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="status"
-              checked={formData.status}
-              onCheckedChange={(checked) => 
-                setFormData({ ...formData, status: checked as boolean })
-              }
+            <FormField
+              control={form.control}
+              name="type_id"
+              render={({ field }) => (
+                <FormItem>
+                  <RHFLabel>Type</RHFLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {types.map((type) => (
+                        <SelectItem key={type.id} value={type.id.toString()}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            <Label htmlFor="status">Already visited</Label>
-          </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Saving...' : item ? 'Update' : 'Add'}
-            </Button>
-          </DialogFooter>
-        </form>
+            <FormField
+              control={form.control}
+              name="lokasi"
+              render={({ field }) => (
+                <FormItem>
+                  <RHFLabel>Location</RHFLabel>
+                  <div className="flex gap-2">
+                    <FormControl>
+                      <Input placeholder="Enter location" className="flex-1" {...field} />
+                    </FormControl>
+                    <Button type="button" variant="outline" size="icon" onClick={openGoogleMaps} disabled={!form.getValues('lokasi')}>
+                      <MapPin className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="link"
+              render={({ field }) => (
+                <FormItem>
+                  <RHFLabel>Link (Optional)</RHFLabel>
+                  <div className="flex gap-2">
+                    <FormControl>
+                      <Input placeholder="TikTok, Instagram, or review link" className="flex-1" {...field} />
+                    </FormControl>
+                    <Button type="button" variant="outline" size="icon" onClick={openLink} disabled={!form.getValues('link')}>
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-center space-x-2">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    <Label htmlFor="status">Already visited</Label>
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Saving...' : item ? 'Update' : 'Add'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   )

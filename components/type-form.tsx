@@ -5,11 +5,14 @@ import { useStore } from '@/lib/store'
 import { Type, Item } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Trash2, Edit } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Form, FormField, FormItem, FormLabel as RHFLabel, FormControl, FormMessage } from '@/components/ui/form'
+import { typeSchema, type TypeFormValues } from '@/lib/validation'
 
 interface TypeFormProps {
   open: boolean
@@ -20,78 +23,62 @@ interface TypeFormProps {
 
 export function TypeForm({ open, onOpenChange, types, items }: TypeFormProps) {
   const { addType, updateType, deleteType, loading } = useStore()
-  const [formData, setFormData] = useState({
-    name: '',
-    category: '' as 'food' | 'place' | ''
-  })
   const [editingType, setEditingType] = useState<Type | null>(null)
+  const form = useForm<TypeFormValues>({
+    resolver: zodResolver(typeSchema),
+    defaultValues: { name: '', category: undefined as unknown as 'food' | 'place' },
+    mode: 'onSubmit',
+  })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!formData.name || !formData.category) {
-      return
-    }
-
-    const duplicateType = types.find(type => 
-      type.name.toLowerCase() === formData.name.toLowerCase() && 
-      type.category === formData.category &&
+  const onSubmit = async (values: TypeFormValues) => {
+    const duplicateType = types.find(type =>
+      type.name.toLowerCase() === values.name.toLowerCase() &&
+      type.category === values.category &&
       (!editingType || type.id !== editingType.id)
     )
 
     if (duplicateType) {
-      alert(`A ${formData.category} type with the name "${formData.name}" already exists.`)
+      form.setError('name', { message: `A ${values.category} type with this name already exists.` })
       return
     }
 
     try {
       if (editingType) {
-        await updateType(editingType.id, {
-          name: formData.name,
-          category: formData.category
-        })
+        await updateType(editingType.id, { name: values.name, category: values.category })
         setEditingType(null)
       } else {
-        await addType({
-          name: formData.name,
-          category: formData.category
-        })
+        await addType({ name: values.name, category: values.category })
       }
-      setFormData({ name: '', category: '' })
+      form.reset({ name: '', category: undefined as unknown as 'food' | 'place' })
     } catch (error) {
-      console.error('Error saving type:', error)
+      console.error(error)
     }
   }
 
   const handleEdit = (type: Type) => {
     setEditingType(type)
-    setFormData({
-      name: type.name,
-      category: type.category
-    })
+    form.reset({ name: type.name, category: type.category })
   }
 
   const handleDelete = async (id: number) => {
     const itemsUsingType = items.filter(item => item.type_id === id)
-    
     if (itemsUsingType.length > 0) {
       const typeToDelete = types.find(type => type.id === id)
       alert(`Cannot delete "${typeToDelete?.name}" type because it is being used by ${itemsUsingType.length} item(s). Please reassign or delete those items first.`)
       return
     }
-
     if (confirm('Are you sure you want to delete this type?')) {
       try {
         await deleteType(id)
       } catch (error) {
-        console.error('Error deleting type:', error)
+        console.error(error)
       }
     }
   }
 
   const cancelEdit = () => {
     setEditingType(null)
-    setFormData({ name: '', category: '' })
+    form.reset({ name: '', category: undefined as unknown as 'food' | 'place' })
   }
 
   const foodTypes = types.filter(type => type.category === 'food')
@@ -112,50 +99,56 @@ export function TypeForm({ open, onOpenChange, types, items }: TypeFormProps) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Type Name</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="Enter type name"
-                      required
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <RHFLabel>Type Name</RHFLabel>
+                          <FormControl>
+                            <Input placeholder="Enter type name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="category"
+                      render={({ field }) => (
+                        <FormItem>
+                          <RHFLabel>Category</RHFLabel>
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select category" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="food">Food</SelectItem>
+                              <SelectItem value="place">Place</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Category</Label>
-                    <Select
-                      value={formData.category}
-                      onValueChange={(value: 'food' | 'place') => 
-                        setFormData({ ...formData, category: value })
-                      }
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="food">Food</SelectItem>
-                        <SelectItem value="place">Place</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button type="submit" disabled={loading}>
-                    {loading ? 'Saving...' : editingType ? 'Update' : 'Add Type'}
-                  </Button>
-                  {editingType && (
-                    <Button type="button" variant="outline" onClick={cancelEdit}>
-                      Cancel
+                  <div className="flex gap-2">
+                    <Button type="submit" disabled={loading}>
+                      {loading ? 'Saving...' : editingType ? 'Update' : 'Add Type'}
                     </Button>
-                  )}
-                </div>
-              </form>
+                    {editingType && (
+                      <Button type="button" variant="outline" onClick={cancelEdit}>
+                        Cancel
+                      </Button>
+                    )}
+                  </div>
+                </form>
+              </Form>
             </CardContent>
           </Card>
 
