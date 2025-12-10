@@ -15,6 +15,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Form, FormField, FormItem, FormLabel as RHFLabel, FormControl, FormMessage } from '@/components/ui/form'
 import { itemSchema, type ItemFormValues } from '@/lib/validation'
 import { useResetOnOpen } from '@/lib/forms'
+import { buildGoogleMapsSearchUrl } from '@/lib/utils'
 
 interface ItemFormProps {
   open: boolean
@@ -28,13 +29,13 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
   const { addItem, updateItem, loading } = useStore()
   const form = useForm<ItemFormValues>({
     resolver: zodResolver(itemSchema),
-    defaultValues: { nama: '', type_id: '', lokasi: '', link: '', status: false },
+    defaultValues: { nama: '', type_id: '', lokasi: '', link: '', status: false, visited_at: '' },
     mode: 'onSubmit',
   })
   const resetValues = useMemo<ItemFormValues>(() => (
     item
-      ? { nama: item.nama, type_id: item.type_id.toString(), lokasi: item.lokasi, link: item.link || '', status: item.status }
-      : { nama: '', type_id: '', lokasi: '', link: '', status: false }
+      ? { nama: item.nama, type_id: item.type_id.toString(), lokasi: item.lokasi, link: item.link || '', status: item.status, visited_at: item.visited_at || '' }
+      : { nama: '', type_id: '', lokasi: '', link: '', status: false, visited_at: '' }
   ), [item])
   useResetOnOpen(form, open, resetValues)
 
@@ -47,6 +48,8 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
           lokasi: values.lokasi,
           link: values.link || null,
           status: values.status,
+          visited_at: values.status ? values.visited_at || null : null,
+          
         })
       } else {
         await addItem({
@@ -55,6 +58,8 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
           lokasi: values.lokasi,
           link: values.link || null,
           status: values.status,
+          visited_at: values.status ? values.visited_at || null : null,
+          
           category,
         })
       }
@@ -67,8 +72,7 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
   const openGoogleMaps = () => {
     const lokasi = form.getValues('lokasi')
     if (lokasi) {
-      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lokasi)}`
-      window.open(url, '_blank')
+      window.open(buildGoogleMapsSearchUrl(lokasi), '_blank')
     }
   }
 
@@ -180,6 +184,26 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
                 </FormItem>
               )}
             />
+
+            {form.watch('status') && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="visited_at"
+                  render={({ field }) => (
+                    <FormItem>
+                      <RHFLabel>Visit Date</RHFLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                
+              </>
+            )}
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

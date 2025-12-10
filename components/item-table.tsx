@@ -7,8 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ItemForm } from './item-form'
+import { VisitForm } from './visit-form'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 import { MapPin, ExternalLink, Edit, Trash2, CheckCircle } from 'lucide-react'
+import { formatDate, buildGoogleMapsSearchUrl } from '@/lib/utils'
 
 interface ItemTableProps {
   items: Item[]
@@ -23,6 +25,8 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
   const [showEditForm, setShowEditForm] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<Item | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [visitedItem, setVisitedItem] = useState<Item | null>(null)
+  const [showVisitedForm, setShowVisitedForm] = useState(false)
 
   const getTypeName = (typeId: number) => {
     const type = types.find(t => t.id === typeId)
@@ -31,7 +35,12 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
 
   const handleStatusChange = async (item: Item, checked: boolean) => {
     try {
-      await updateItem(item.id, { status: checked })
+      if (checked) {
+        setVisitedItem(item)
+        setShowVisitedForm(true)
+      } else {
+        await updateItem(item.id, { status: false, visited_at: null })
+      }
     } catch (error) {
       console.error('Error updating status:', error)
     }
@@ -58,8 +67,7 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
   }
 
   const openGoogleMaps = (location: string) => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`
-    window.open(url, '_blank')
+    window.open(buildGoogleMapsSearchUrl(location), '_blank')
   }
 
   const openLink = (link: string) => {
@@ -92,14 +100,15 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
       <div className="rounded-md border">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-[50px]">Status</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Link</TableHead>
-              <TableHead className="w-[120px]">Actions</TableHead>
-            </TableRow>
+          <TableRow>
+            <TableHead className="w-[50px]">Status</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Location</TableHead>
+            <TableHead>Link</TableHead>
+            <TableHead>Visited</TableHead>
+            <TableHead className="w-[120px]">Actions</TableHead>
+          </TableRow>
           </TableHeader>
           <TableBody>
             {items.map((item) => (
@@ -111,7 +120,7 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
                     ) : (
                       <Checkbox
                         checked={item.status}
-                        onCheckedChange={(checked) => 
+                        onCheckedChange={(checked) =>
                           handleStatusChange(item, checked as boolean)
                         }
                       />
@@ -156,6 +165,11 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
                   )}
                 </TableCell>
                 <TableCell>
+                  <span className="text-sm text-muted-foreground">
+                    {item.status && item.visited_at ? formatDate(item.visited_at) : '-'}
+                  </span>
+                </TableCell>
+                <TableCell>
                   <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
@@ -191,7 +205,18 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
         types={types}
         item={editingItem || undefined}
       />
-      
+
+      {visitedItem && (
+        <VisitForm
+          open={showVisitedForm}
+          onOpenChange={(open) => {
+            setShowVisitedForm(open)
+            if (!open) setVisitedItem(null)
+          }}
+          item={visitedItem}
+        />
+      )}
+
       <ConfirmationDialog
         open={showDeleteDialog}
         onOpenChange={(open) => {
