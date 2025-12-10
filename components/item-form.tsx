@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useMemo } from 'react'
 import { useStore } from '@/lib/store'
 import { Item, Type } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Form, FormField, FormItem, FormLabel as RHFLabel, FormControl, FormMessage } from '@/components/ui/form'
 import { itemSchema, type ItemFormValues } from '@/lib/validation'
+import { useResetOnOpen } from '@/lib/forms'
 
 interface ItemFormProps {
   open: boolean
@@ -30,21 +31,12 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
     defaultValues: { nama: '', type_id: '', lokasi: '', link: '', status: false },
     mode: 'onSubmit',
   })
-
-  useEffect(() => {
-    if (item && open) {
-      form.reset({
-        nama: item.nama,
-        type_id: item.type_id.toString(),
-        lokasi: item.lokasi,
-        link: item.link || '',
-        status: item.status,
-      })
-    }
-    if (!item && open) {
-      form.reset({ nama: '', type_id: '', lokasi: '', link: '', status: false })
-    }
-  }, [item, open, form])
+  const resetValues = useMemo<ItemFormValues>(() => (
+    item
+      ? { nama: item.nama, type_id: item.type_id.toString(), lokasi: item.lokasi, link: item.link || '', status: item.status }
+      : { nama: '', type_id: '', lokasi: '', link: '', status: false }
+  ), [item])
+  useResetOnOpen(form, open, resetValues)
 
   const onSubmit = async (values: ItemFormValues) => {
     try {

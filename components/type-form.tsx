@@ -13,6 +13,8 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Form, FormField, FormItem, FormLabel as RHFLabel, FormControl, FormMessage } from '@/components/ui/form'
 import { typeSchema, type TypeFormValues } from '@/lib/validation'
+import { useResetOnOpen } from '@/lib/forms'
+import { useMemo } from 'react'
 
 interface TypeFormProps {
   open: boolean
@@ -29,6 +31,13 @@ export function TypeForm({ open, onOpenChange, types, items }: TypeFormProps) {
     defaultValues: { name: '', category: undefined as unknown as 'food' | 'place' },
     mode: 'onSubmit',
   })
+
+  const resetValues = useMemo<TypeFormValues>(() => (
+    editingType
+      ? { name: editingType.name, category: editingType.category }
+      : { name: '', category: undefined as unknown as 'food' | 'place' }
+  ), [editingType])
+  useResetOnOpen(form, open, resetValues)
 
   const onSubmit = async (values: TypeFormValues) => {
     const duplicateType = types.find(type =>
