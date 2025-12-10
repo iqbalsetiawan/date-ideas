@@ -48,7 +48,7 @@ A simple web app to track places to visit and food to try.
 1. Push code to GitHub
 2. Connect repository to [Vercel](https://vercel.com)
 3. Add environment variables in Vercel dashboard
-4. Deploy!
+4. Deploy
 
 ## Tech Stack
 
