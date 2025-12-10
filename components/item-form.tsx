@@ -15,7 +15,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Form, FormField, FormItem, FormLabel as RHFLabel, FormControl, FormMessage } from '@/components/ui/form'
 import { itemSchema, type ItemFormValues } from '@/lib/validation'
 import { useResetOnOpen } from '@/lib/forms'
-import { buildGoogleMapsSearchUrl } from '@/lib/utils'
+ 
 
 interface ItemFormProps {
   open: boolean
@@ -72,7 +72,7 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
   const openGoogleMaps = () => {
     const lokasi = form.getValues('lokasi')
     if (lokasi) {
-      window.open(buildGoogleMapsSearchUrl(lokasi), '_blank')
+      window.open(lokasi, '_blank')
     }
   }
 
@@ -137,15 +137,15 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
               name="lokasi"
               render={({ field }) => (
                 <FormItem>
-                  <RHFLabel>Location</RHFLabel>
-                  <div className="flex gap-2">
-                    <FormControl>
-                      <Input placeholder="Enter location" className="flex-1" {...field} />
-                    </FormControl>
-                    <Button type="button" variant="outline" size="icon" onClick={openGoogleMaps} disabled={!form.getValues('lokasi')}>
-                      <MapPin className="h-4 w-4" />
-                    </Button>
-                  </div>
+              <RHFLabel>Google Maps URL</RHFLabel>
+              <div className="flex gap-2">
+                <FormControl>
+                  <Input placeholder="https://maps.app.goo.gl/..." className="flex-1" {...field} />
+                </FormControl>
+                <Button type="button" variant="outline" size="icon" onClick={openGoogleMaps} disabled={!form.getValues('lokasi')}>
+                  <MapPin className="h-4 w-4" />
+                </Button>
+              </div>
                   <FormMessage />
                 </FormItem>
               )}

@@ -10,7 +10,8 @@ import { ItemForm } from './item-form'
 import { VisitForm } from './visit-form'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 import { MapPin, ExternalLink, Edit, Trash2, CheckCircle } from 'lucide-react'
-import { formatDate, buildGoogleMapsSearchUrl } from '@/lib/utils'
+import { cn } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 
 interface ItemTableProps {
   items: Item[]
@@ -66,8 +67,8 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
     }
   }
 
-  const openGoogleMaps = (location: string) => {
-    window.open(buildGoogleMapsSearchUrl(location), '_blank')
+  const openGoogleMaps = (url: string) => {
+    window.open(url, '_blank')
   }
 
   const openLink = (link: string) => {
@@ -112,7 +113,7 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
           </TableHeader>
           <TableBody>
             {items.map((item) => (
-              <TableRow key={item.id} className={item.status ? 'opacity-60' : ''}>
+              <TableRow key={item.id}>
                 <TableCell>
                   <div className="flex items-center justify-center">
                     {item.status ? (
@@ -128,18 +129,18 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
                   </div>
                 </TableCell>
                 <TableCell className="font-medium">
-                  <div className={item.status ? 'line-through' : ''}>
+                  <div className={cn(item.status ? 'line-through opacity-60' : '')}>
                     {item.nama}
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                  <span className={cn('inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10', item.status ? 'opacity-60' : '')}>
                     {getTypeName(item.type_id)}
                   </span>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span className="truncate max-w-[200px]">{item.lokasi}</span>
+                  <div className={cn('flex items-center gap-2')}>
+                    <span className={cn('truncate max-w-[200px]', item.status ? 'opacity-60' : '')}>{item.lokasi}</span>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -156,12 +157,12 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
                       variant="ghost"
                       size="sm"
                       onClick={() => openLink(item.link!)}
-                      className="h-6 w-6 p-0"
+                      className={cn('h-6 w-6 p-0', item.status ? 'opacity-60' : '')}
                     >
                       <ExternalLink className="h-3 w-3" />
                     </Button>
                   ) : (
-                    <span className="text-muted-foreground text-sm">-</span>
+                    <span className={cn('text-muted-foreground text-sm', item.status ? 'opacity-60' : '')}>-</span>
                   )}
                 </TableCell>
                 <TableCell>

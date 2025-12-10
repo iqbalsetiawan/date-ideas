@@ -4,8 +4,8 @@ import { z } from 'zod'
 export const itemSchema = z.object({
   nama: z.string().min(1, 'Name is required'),
   type_id: z.string().min(1, 'Type is required'),
-  lokasi: z.string().min(1, 'Location is required'),
-  link: z.url('Invalid URL').optional().or(z.literal('')),
+  lokasi: z.string().url('Invalid Google Maps URL'),
+  link: z.string().url('Invalid URL').optional().or(z.literal('')),
   status: z.boolean(),
   visited_at: z.string().optional().or(z.literal('')),
 }).superRefine((data, ctx) => {
