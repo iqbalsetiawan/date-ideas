@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ItemForm } from './item-form'
 import { VisitForm } from './visit-form'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
-import { MapPin, ExternalLink, Edit, Trash2, CheckCircle } from 'lucide-react'
+import { MapPin, ExternalLink, Edit, Trash2, CheckCircle, GripVertical } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatDate } from '@/lib/utils'
 
@@ -21,13 +21,14 @@ interface ItemTableProps {
 }
 
 export function ItemTable({ items, types, category, loading }: ItemTableProps) {
-  const { updateItem, deleteItem } = useStore()
+  const { updateItem, deleteItem, reorderItems } = useStore()
   const [editingItem, setEditingItem] = useState<Item | null>(null)
   const [showEditForm, setShowEditForm] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<Item | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [visitedItem, setVisitedItem] = useState<Item | null>(null)
   const [showVisitedForm, setShowVisitedForm] = useState(false)
+  const [dragId, setDragId] = useState<number | null>(null)
 
   const getTypeName = (typeId: number) => {
     const type = types.find(t => t.id === typeId)
@@ -113,7 +114,21 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
           </TableHeader>
           <TableBody>
             {items.map((item) => (
-              <TableRow key={item.id}>
+              <TableRow
+                key={item.id}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => {
+                  if (!dragId || dragId === item.id) return
+                  const ids = items.map(i => i.id)
+                  const from = ids.indexOf(dragId)
+                  const to = ids.indexOf(item.id)
+                  const newIds = [...ids]
+                  const [moved] = newIds.splice(from, 1)
+                  newIds.splice(to, 0, moved)
+                  reorderItems(newIds)
+                  setDragId(null)
+                }}
+              >
                 <TableCell>
                   <div className="flex items-center justify-center">
                     {item.status ? (
@@ -188,6 +203,16 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
+                    <button
+                      type="button"
+                      title="Drag to reorder"
+                      className="h-8 w-8 flex items-center justify-center cursor-grab"
+                      draggable
+                      onDragStart={() => setDragId(item.id)}
+                      onDragEnd={() => setDragId(null)}
+                    >
+                      <GripVertical className="h-4 w-4" />
+                    </button>
                   </div>
                 </TableCell>
               </TableRow>

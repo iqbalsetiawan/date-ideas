@@ -20,6 +20,7 @@ interface Store {
   addItem: (item: ItemInsert) => Promise<void>
   updateItem: (id: number, item: Partial<Item>) => Promise<void>
   deleteItem: (id: number) => Promise<void>
+  reorderItems: (orderedIds: number[]) => Promise<void>
   
   fetchTypes: () => Promise<void>
   addType: (type: TypeInsert) => Promise<void>
@@ -44,7 +45,7 @@ export const useStore = create<Store>((set, get) => ({
   setError: (error) => set({ error }),
   
   addToast: (toast) => {
-    const id = Math.random().toString(36).substr(2, 9)
+    const id = Math.random().toString(36).substring(2, 9)
     set((state) => ({
       toasts: [...state.toasts, { ...toast, id }]
     }))
@@ -74,6 +75,7 @@ export const useStore = create<Store>((set, get) => ({
           *,
           types!inner(id, name, category)
         `)
+        .order('position', { ascending: true })
         .order('created_at', { ascending: false })
       
       if (error) throw error
@@ -102,7 +104,11 @@ export const useStore = create<Store>((set, get) => ({
       if (error) throw error
       
       const { items, addToast } = get()
-      set({ items: [data, ...items] })
+      const maxPos = Math.max(0, ...items.map(i => i.position || 0))
+      // place newly added at bottom
+      await supabase.from('items').update({ position: maxPos + 1 }).eq('id', data.id)
+      const updated = { ...data, position: maxPos + 1 }
+      set({ items: [...items, updated] })
       addToast({
         title: 'Success!',
         description: `${data.nama} has been added successfully.`,
@@ -152,6 +158,22 @@ export const useStore = create<Store>((set, get) => ({
       })
     } finally {
       set({ loading: false })
+    }
+  },
+
+  reorderItems: async (orderedIds) => {
+    const { items } = get()
+    // optimistic reorder
+    const idToItem = new Map(items.map(i => [i.id, i]))
+    const reordered = orderedIds.map((id, idx) => ({ ...idToItem.get(id)!, position: idx + 1 }))
+    set({ items: reordered })
+
+    if (!hasValidCredentials) return
+    // persist positions
+    for (let i = 0; i < orderedIds.length; i++) {
+      const id = orderedIds[i]
+      const pos = i + 1
+      await supabase.from('items').update({ position: pos }).eq('id', id)
     }
   },
   

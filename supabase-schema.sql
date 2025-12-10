@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS items (
   lokasi TEXT NOT NULL,
   link TEXT,
   status BOOLEAN DEFAULT FALSE,
+  visited_at DATE,
+  position BIGINT,
   category TEXT NOT NULL CHECK (category IN ('food', 'place')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -22,6 +24,7 @@ CREATE TABLE IF NOT EXISTS items (
 CREATE INDEX IF NOT EXISTS idx_items_category ON items(category);
 CREATE INDEX IF NOT EXISTS idx_items_type_id ON items(type_id);
 CREATE INDEX IF NOT EXISTS idx_items_status ON items(status);
+CREATE INDEX IF NOT EXISTS idx_items_position ON items(position);
 CREATE INDEX IF NOT EXISTS idx_types_category ON types(category);
 
 -- Enable Row Level Security (RLS)

@@ -43,6 +43,7 @@ export type Database = {
           link: string | null
           status: boolean
           visited_at: string | null
+          position: number | null
           category: 'food' | 'place'
           created_at: string
         }
@@ -54,6 +55,7 @@ export type Database = {
           link?: string | null
           status?: boolean
           visited_at?: string | null
+          position?: number | null
           category: 'food' | 'place'
           created_at?: string
         }
@@ -65,6 +67,7 @@ export type Database = {
           link?: string | null
           status?: boolean
           visited_at?: string | null
+          position?: number | null
           category?: 'food' | 'place'
           created_at?: string
         }
