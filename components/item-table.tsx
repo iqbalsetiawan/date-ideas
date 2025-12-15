@@ -3,6 +3,10 @@
 import { useState } from 'react'
 import { useStore } from '@/lib/store'
 import { Item, Type } from '@/lib/supabase'
+import { DndContext, type DragEndEvent } from '@dnd-kit/core'
+import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { restrictToVerticalAxis, restrictToParentElement } from '@dnd-kit/modifiers'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -28,7 +32,6 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [visitedItem, setVisitedItem] = useState<Item | null>(null)
   const [showVisitedForm, setShowVisitedForm] = useState(false)
-  const [dragId, setDragId] = useState<number | null>(null)
 
   const getTypeName = (typeId: number) => {
     const type = types.find(t => t.id === typeId)
@@ -97,128 +100,141 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
     )
   }
 
+  const onDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const ids = items.map(i => i.id)
+    const oldIndex = ids.indexOf(active.id as number)
+    const newIndex = ids.indexOf(over.id as number)
+    const newIds = arrayMove(ids, oldIndex, newIndex)
+    reorderItems(newIds)
+  }
+
+  const Row = ({ item }: { item: Item }) => {
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id })
+    return (
+      <TableRow
+        ref={setNodeRef}
+        style={{ transform: CSS.Transform.toString(transform), transition }}
+        key={item.id}
+        {...attributes}
+      >
+        <TableCell className="w-[40px]">
+          <button
+            type="button"
+            title="Drag to reorder"
+            className="h-8 w-8 flex items-center justify-center cursor-grab"
+            {...listeners}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+        </TableCell>
+        <TableCell>
+          <div className="flex items-center justify-center">
+            {item.status ? (
+              <CheckCircle className="h-5 w-5 text-green-600" />
+            ) : (
+              <Checkbox
+                checked={item.status}
+                onCheckedChange={(checked) =>
+                  handleStatusChange(item, checked as boolean)
+                }
+              />
+            )}
+          </div>
+        </TableCell>
+        <TableCell className="font-medium">
+          <div className={cn(item.status ? 'line-through opacity-60' : '')}>
+            {item.nama}
+          </div>
+        </TableCell>
+        <TableCell>
+          <span className={cn('inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10', item.status ? 'opacity-60' : '')}>
+            {getTypeName(item.type_id)}
+          </span>
+        </TableCell>
+        <TableCell>
+          <div className={cn('flex items-center gap-2')}>
+            <span className={cn('truncate max-w-[200px]', item.status ? 'opacity-60' : '')}>{item.lokasi}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => openGoogleMaps(item.lokasi)}
+              className="h-6 w-6 p-0"
+            >
+              <MapPin className="h-3 w-3" />
+            </Button>
+          </div>
+        </TableCell>
+        <TableCell>
+          {item.link ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => openLink(item.link!)}
+              className={cn('h-6 w-6 p-0', item.status ? 'opacity-60' : '')}
+            >
+              <ExternalLink className="h-3 w-3" />
+            </Button>
+          ) : (
+            <span className={cn('text-muted-foreground text-sm', item.status ? 'opacity-60' : '')}>-</span>
+          )}
+        </TableCell>
+        <TableCell>
+          <span className="text-sm text-muted-foreground">
+            {item.status && item.visited_at ? formatDate(item.visited_at) : '-'}
+          </span>
+        </TableCell>
+        <TableCell>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleEdit(item)}
+              className="h-8 w-8 p-0"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleDelete(item)}
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </TableCell>
+      </TableRow>
+    )
+  }
+
   return (
     <>
       <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-          <TableRow>
-            <TableHead className="w-[50px]">Status</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Location</TableHead>
-            <TableHead>Link</TableHead>
-            <TableHead>Visited</TableHead>
-            <TableHead className="w-[120px]">Actions</TableHead>
-          </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item) => (
-              <TableRow
-                key={item.id}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={() => {
-                  if (!dragId || dragId === item.id) return
-                  const ids = items.map(i => i.id)
-                  const from = ids.indexOf(dragId)
-                  const to = ids.indexOf(item.id)
-                  const newIds = [...ids]
-                  const [moved] = newIds.splice(from, 1)
-                  newIds.splice(to, 0, moved)
-                  reorderItems(newIds)
-                  setDragId(null)
-                }}
-              >
-                <TableCell>
-                  <div className="flex items-center justify-center">
-                    {item.status ? (
-                      <CheckCircle className="h-5 w-5 text-green-600" />
-                    ) : (
-                      <Checkbox
-                        checked={item.status}
-                        onCheckedChange={(checked) =>
-                          handleStatusChange(item, checked as boolean)
-                        }
-                      />
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="font-medium">
-                  <div className={cn(item.status ? 'line-through opacity-60' : '')}>
-                    {item.nama}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <span className={cn('inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10', item.status ? 'opacity-60' : '')}>
-                    {getTypeName(item.type_id)}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <div className={cn('flex items-center gap-2')}>
-                    <span className={cn('truncate max-w-[200px]', item.status ? 'opacity-60' : '')}>{item.lokasi}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openGoogleMaps(item.lokasi)}
-                      className="h-6 w-6 p-0"
-                    >
-                      <MapPin className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {item.link ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openLink(item.link!)}
-                      className={cn('h-6 w-6 p-0', item.status ? 'opacity-60' : '')}
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                    </Button>
-                  ) : (
-                    <span className={cn('text-muted-foreground text-sm', item.status ? 'opacity-60' : '')}>-</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <span className="text-sm text-muted-foreground">
-                    {item.status && item.visited_at ? formatDate(item.visited_at) : '-'}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(item)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(item)}
-                      className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                    <button
-                      type="button"
-                      title="Drag to reorder"
-                      className="h-8 w-8 flex items-center justify-center cursor-grab"
-                      draggable
-                      onDragStart={() => setDragId(item.id)}
-                      onDragEnd={() => setDragId(null)}
-                    >
-                      <GripVertical className="h-4 w-4" />
-                    </button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <DndContext onDragEnd={onDragEnd} modifiers={[restrictToVerticalAxis, restrictToParentElement]}>
+          <Table>
+            <TableHeader>
+            <TableRow>
+              <TableHead className="w-[40px]"></TableHead>
+              <TableHead className="w-[50px]">Status</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead>Link</TableHead>
+              <TableHead>Visited</TableHead>
+              <TableHead className="w-[120px]">Actions</TableHead>
+            </TableRow>
+            </TableHeader>
+            <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+              <TableBody>
+                {items.map((item) => (
+                  <Row key={item.id} item={item} />
+                ))}
+              </TableBody>
+            </SortableContext>
+          </Table>
+        </DndContext>
       </div>
 
       <ItemForm

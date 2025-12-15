@@ -105,7 +105,6 @@ export const useStore = create<Store>((set, get) => ({
       
       const { items, addToast } = get()
       const maxPos = Math.max(0, ...items.map(i => i.position || 0))
-      // place newly added at bottom
       await supabase.from('items').update({ position: maxPos + 1 }).eq('id', data.id)
       const updated = { ...data, position: maxPos + 1 }
       set({ items: [...items, updated] })
@@ -163,13 +162,18 @@ export const useStore = create<Store>((set, get) => ({
 
   reorderItems: async (orderedIds) => {
     const { items } = get()
-    // optimistic reorder
     const idToItem = new Map(items.map(i => [i.id, i]))
-    const reordered = orderedIds.map((id, idx) => ({ ...idToItem.get(id)!, position: idx + 1 }))
-    set({ items: reordered })
+    if (orderedIds.length === 0) return
+    const affectedCategory = idToItem.get(orderedIds[0])!.category
+    const orderedSet = new Set(orderedIds)
+    const reorderedSubset = orderedIds.map((id, idx) => ({
+      ...idToItem.get(id)!,
+      position: idx + 1
+    }))
+    const others = items.filter(i => i.category !== affectedCategory || !orderedSet.has(i.id))
+    set({ items: [...others, ...reorderedSubset] })
 
     if (!hasValidCredentials) return
-    // persist positions
     for (let i = 0; i < orderedIds.length; i++) {
       const id = orderedIds[i]
       const pos = i + 1
