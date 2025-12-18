@@ -40,7 +40,6 @@ export type Database = {
           name: string
           type_id: number
           location: string
-          link: string | null
           status: boolean
           visited_at: string | null
           position: number | null
@@ -52,7 +51,6 @@ export type Database = {
           name: string
           type_id: number
           location: string
-          link?: string | null
           status?: boolean
           visited_at?: string | null
           position?: number | null
@@ -64,7 +62,6 @@ export type Database = {
           name?: string
           type_id?: number
           location?: string
-          link?: string | null
           status?: boolean
           visited_at?: string | null
           position?: number | null

@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ItemForm } from './item-form'
 import { VisitForm } from './visit-form'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
-import { MapPin, ExternalLink, Edit, Trash2, CheckCircle, GripVertical } from 'lucide-react'
+import { MapPin, Edit, Trash2, CheckCircle, GripVertical } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatDate } from '@/lib/utils'
 
@@ -87,10 +87,6 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
 
   const openGoogleMaps = (url: string) => {
     window.open(url, '_blank')
-  }
-
-  const openLink = (link: string) => {
-    window.open(link, '_blank')
   }
 
   if (loading) {
@@ -181,20 +177,6 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
           </div>
         </TableCell>
         <TableCell className="hidden md:table-cell">
-          {item.link ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => openLink(item.link!)}
-              className={cn('h-6 w-6 p-0', item.status ? 'opacity-60' : '')}
-            >
-              <ExternalLink className="h-3 w-3" />
-            </Button>
-          ) : (
-            <span className={cn('text-muted-foreground text-sm', item.status ? 'opacity-60' : '')}>-</span>
-          )}
-        </TableCell>
-        <TableCell className="hidden md:table-cell">
           <span className="text-sm text-muted-foreground">
             {item.status && item.visited_at ? formatDate(item.visited_at) : '-'}
           </span>
@@ -273,16 +255,6 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
           >
             <MapPin className="h-4 w-4" />
           </Button>
-          {item.link ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => openLink(item.link!)}
-              className={cn('h-8 w-8 p-0', item.status ? 'opacity-60' : '')}
-            >
-              <ExternalLink className="h-4 w-4" />
-            </Button>
-          ) : null}
           <Button
             variant="ghost"
             size="sm"
@@ -317,7 +289,6 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
                   <TableHead>Name</TableHead>
                   <TableHead className="hidden md:table-cell">Type</TableHead>
                   <TableHead>Location</TableHead>
-                  <TableHead className="hidden md:table-cell">Link</TableHead>
                   <TableHead className="hidden md:table-cell">Visited</TableHead>
                   <TableHead className="w-[120px]">Actions</TableHead>
                 </TableRow>

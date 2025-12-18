@@ -12,7 +12,6 @@ CREATE TABLE IF NOT EXISTS items (
   nama TEXT NOT NULL,
   type_id BIGINT NOT NULL REFERENCES types(id) ON DELETE CASCADE,
   lokasi TEXT NOT NULL,
-  link TEXT,
   status BOOLEAN DEFAULT FALSE,
   visited_at DATE,
   position BIGINT,
@@ -54,9 +53,9 @@ INSERT INTO types (name, category) VALUES
 ON CONFLICT DO NOTHING;
 
 -- Insert some sample items
-INSERT INTO items (nama, type_id, lokasi, link, status, category) VALUES
-  ('Warung Padang Sederhana', 1, 'Jl. Sudirman No. 123, Jakarta', 'https://instagram.com/warungpadang', false, 'food'),
-  ('Kopi Kenangan', 2, 'Mall Central Park, Jakarta', 'https://tiktok.com/@kopikenangan', true, 'food'),
-  ('Museum Nasional', 5, 'Jl. Medan Merdeka Barat No. 12, Jakarta', null, false, 'place'),
-  ('Taman Mini Indonesia Indah', 6, 'Jl. Raya Taman Mini, Jakarta Timur', 'https://instagram.com/tamanmini', true, 'place')
+INSERT INTO items (nama, type_id, lokasi, status, category) VALUES
+  ('Warung Padang Sederhana', 1, 'Jl. Sudirman No. 123, Jakarta', false, 'food'),
+  ('Kopi Kenangan', 2, 'Mall Central Park, Jakarta', true, 'food'),
+  ('Museum Nasional', 5, 'Jl. Medan Merdeka Barat No. 12, Jakarta', false, 'place'),
+  ('Taman Mini Indonesia Indah', 6, 'Jl. Raya Taman Mini, Jakarta Timur', true, 'place')
 ON CONFLICT DO NOTHING;

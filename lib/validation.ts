@@ -4,8 +4,7 @@ import { z } from 'zod'
 export const itemSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   type_id: z.string().min(1, 'Type is required'),
-  location: z.url('Invalid Google Maps URL'),
-  link: z.url('Invalid URL').optional().or(z.literal('')),
+  location: z.url('Invalid URL'),
   status: z.boolean(),
   visited_at: z.string().optional().or(z.literal('')),
 })

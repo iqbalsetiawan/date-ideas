@@ -9,7 +9,6 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { ExternalLink } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Form, FormField, FormItem, FormLabel as RHFLabel, FormControl, FormMessage } from '@/components/ui/form'
@@ -28,13 +27,13 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
   const { addItem, updateItem, loading } = useStore()
   const form = useForm<ItemFormValues>({
     resolver: zodResolver(itemSchema),
-    defaultValues: { name: '', type_id: '', location: '', link: '', status: false, visited_at: '' },
+    defaultValues: { name: '', type_id: '', location: '', status: false, visited_at: '' },
     mode: 'onSubmit',
   })
   const resetValues = useMemo<ItemFormValues>(() => (
     item
-      ? { name: item.name, type_id: item.type_id.toString(), location: item.location, link: item.link || '', status: item.status, visited_at: item.visited_at || '' }
-      : { name: '', type_id: '', location: '', link: '', status: false, visited_at: '' }
+      ? { name: item.name, type_id: item.type_id.toString(), location: item.location, status: item.status, visited_at: item.visited_at || '' }
+      : { name: '', type_id: '', location: '', status: false, visited_at: '' }
   ), [item])
   useResetOnOpen(form, open, resetValues)
 
@@ -45,7 +44,6 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
           name: values.name,
           type_id: parseInt(values.type_id),
           location: values.location,
-          link: values.link || null,
           status: values.status,
           visited_at: values.status ? values.visited_at || null : null,
         })
@@ -54,7 +52,6 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
           name: values.name,
           type_id: parseInt(values.type_id),
           location: values.location,
-          link: values.link || null,
           status: values.status,
           visited_at: values.status ? values.visited_at || null : null,
           category,
@@ -63,13 +60,6 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
       onOpenChange(false)
     } catch (error) {
       console.error(error)
-    }
-  }
-
-  const openLink = () => {
-    const link = form.getValues('link')
-    if (link) {
-      window.open(link, '_blank')
     }
   }
 
@@ -133,25 +123,6 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
                   <FormControl>
                     <Input placeholder="Google Maps URL" {...field} />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="link"
-              render={({ field }) => (
-                <FormItem>
-                  <RHFLabel>Link (Optional)</RHFLabel>
-                  <div className="flex gap-2">
-                    <FormControl>
-                      <Input placeholder="TikTok, Instagram, or review link" className="flex-1" {...field} />
-                    </FormControl>
-                    <Button type="button" variant="outline" size="icon" onClick={openLink} disabled={!form.getValues('link')}>
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                  </div>
                   <FormMessage />
                 </FormItem>
               )}
