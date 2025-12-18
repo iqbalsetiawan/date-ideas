@@ -119,7 +119,7 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
         key={item.id}
         {...attributes}
       >
-        <TableCell className="w-[40px]">
+        <TableCell className="w-10">
           <button
             type="button"
             title="Drag to reorder"
@@ -145,7 +145,7 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
         </TableCell>
         <TableCell className="font-medium">
           <div className={cn(item.status ? 'line-through opacity-60' : '')}>
-            {item.nama}
+            {item.name}
           </div>
         </TableCell>
         <TableCell>
@@ -155,11 +155,11 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
         </TableCell>
         <TableCell>
           <div className={cn('flex items-center gap-2')}>
-            <span className={cn('truncate max-w-[200px]', item.status ? 'opacity-60' : '')}>{item.lokasi}</span>
+            <span className={cn('truncate max-w-[200px]', item.status ? 'opacity-60' : '')}>{item.location}</span>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => openGoogleMaps(item.lokasi)}
+              onClick={() => openGoogleMaps(item.location)}
               className="h-6 w-6 p-0"
             >
               <MapPin className="h-3 w-3" />
@@ -215,16 +215,16 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
         <DndContext onDragEnd={onDragEnd} modifiers={[restrictToVerticalAxis, restrictToParentElement]}>
           <Table>
             <TableHeader>
-            <TableRow>
-              <TableHead className="w-[40px]"></TableHead>
-              <TableHead className="w-[50px]">Status</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Link</TableHead>
-              <TableHead>Visited</TableHead>
-              <TableHead className="w-[120px]">Actions</TableHead>
-            </TableRow>
+              <TableRow>
+                <TableHead className="w-10"></TableHead>
+                <TableHead className="w-[50px]">Status</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Link</TableHead>
+                <TableHead>Visited</TableHead>
+                <TableHead className="w-[120px]">Actions</TableHead>
+              </TableRow>
             </TableHeader>
             <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
               <TableBody>
@@ -266,7 +266,7 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
           if (!open) setItemToDelete(null)
         }}
         title="Delete Item"
-        description={`Are you sure you want to delete "${itemToDelete?.nama}"? This action cannot be undone.`}
+        description={`Are you sure you want to delete "${itemToDelete?.name}"? This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
         variant="destructive"

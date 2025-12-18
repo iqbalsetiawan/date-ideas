@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 
-const hasValidCredentials = 
-  supabaseUrl !== 'https://placeholder.supabase.co' && 
+const hasValidCredentials =
+  supabaseUrl !== 'https://placeholder.supabase.co' &&
   supabaseAnonKey !== 'placeholder-key' &&
   supabaseUrl.includes('.supabase.co')
 
@@ -37,9 +37,9 @@ export type Database = {
       items: {
         Row: {
           id: number
-          nama: string
+          name: string
           type_id: number
-          lokasi: string
+          location: string
           link: string | null
           status: boolean
           visited_at: string | null
@@ -49,9 +49,9 @@ export type Database = {
         }
         Insert: {
           id?: number
-          nama: string
+          name: string
           type_id: number
-          lokasi: string
+          location: string
           link?: string | null
           status?: boolean
           visited_at?: string | null
@@ -61,9 +61,9 @@ export type Database = {
         }
         Update: {
           id?: number
-          nama?: string
+          name?: string
           type_id?: number
-          lokasi?: string
+          location?: string
           link?: string | null
           status?: boolean
           visited_at?: string | null

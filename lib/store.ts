@@ -15,21 +15,21 @@ interface Store {
   loading: boolean
   error: string | null
   toasts: Toast[]
-  
+
   fetchItems: () => Promise<void>
   addItem: (item: ItemInsert) => Promise<void>
   updateItem: (id: number, item: Partial<Item>) => Promise<void>
   deleteItem: (id: number) => Promise<void>
   reorderItems: (orderedIds: number[]) => Promise<void>
-  
+
   fetchTypes: () => Promise<void>
   addType: (type: TypeInsert) => Promise<void>
   updateType: (id: number, type: Partial<Type>) => Promise<void>
   deleteType: (id: number) => Promise<void>
-  
+
   addToast: (toast: Omit<Toast, 'id'>) => void
   removeToast: (id: string) => void
-  
+
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
 }
@@ -40,33 +40,33 @@ export const useStore = create<Store>((set, get) => ({
   loading: true,
   error: null,
   toasts: [],
-  
+
   setLoading: (loading) => set({ loading }),
   setError: (error) => set({ error }),
-  
+
   addToast: (toast) => {
     const id = Math.random().toString(36).substring(2, 9)
     set((state) => ({
       toasts: [...state.toasts, { ...toast, id }]
     }))
   },
-  
+
   removeToast: (id) => {
     set((state) => ({
       toasts: state.toasts.filter(toast => toast.id !== id)
     }))
   },
-  
+
   fetchItems: async () => {
     if (!hasValidCredentials) {
-      set({ 
+      set({
         items: [],
         loading: false,
         error: 'Please configure your Supabase credentials in .env.local'
       })
       return
     }
-    
+
     try {
       set({ loading: true, error: null })
       const { data, error } = await supabase
@@ -77,7 +77,7 @@ export const useStore = create<Store>((set, get) => ({
         `)
         .order('position', { ascending: true })
         .order('created_at', { ascending: false })
-      
+
       if (error) throw error
       set({ items: data || [] })
     } catch (error) {
@@ -86,13 +86,13 @@ export const useStore = create<Store>((set, get) => ({
       set({ loading: false })
     }
   },
-  
+
   addItem: async (item) => {
     if (!hasValidCredentials) {
       set({ error: 'Please configure your Supabase credentials to add items' })
       return
     }
-    
+
     try {
       set({ loading: true, error: null })
       const { data, error } = await supabase
@@ -100,17 +100,18 @@ export const useStore = create<Store>((set, get) => ({
         .insert(item)
         .select()
         .single()
-      
+
       if (error) throw error
-      
+
       const { items, addToast } = get()
-      const maxPos = Math.max(0, ...items.map(i => i.position || 0))
-      await supabase.from('items').update({ position: maxPos + 1 }).eq('id', data.id)
-      const updated = { ...data, position: maxPos + 1 }
-      set({ items: [...items, updated] })
+      const minPos = items.length > 0 ? Math.min(...items.map(i => i.position || 0)) : 1
+      const newPos = minPos - 1
+      await supabase.from('items').update({ position: newPos }).eq('id', data.id)
+      const updated = { ...data, position: newPos }
+      set({ items: [updated, ...items] })
       addToast({
         title: 'Success!',
-        description: `${data.nama} has been added successfully.`,
+        description: `${data.name} has been added successfully.`,
         type: 'success'
       })
     } catch (error) {
@@ -125,7 +126,7 @@ export const useStore = create<Store>((set, get) => ({
       set({ loading: false })
     }
   },
-  
+
   updateItem: async (id, updates) => {
     try {
       set({ loading: true, error: null })
@@ -135,16 +136,16 @@ export const useStore = create<Store>((set, get) => ({
         .eq('id', id)
         .select()
         .single()
-      
+
       if (error) throw error
-      
+
       const { items, addToast } = get()
-      set({ 
+      set({
         items: items.map(item => item.id === id ? { ...item, ...data } : item)
       })
       addToast({
         title: 'Updated!',
-        description: `${data.nama} has been updated successfully.`,
+        description: `${data.name} has been updated successfully.`,
         type: 'success'
       })
     } catch (error) {
@@ -180,25 +181,25 @@ export const useStore = create<Store>((set, get) => ({
       await supabase.from('items').update({ position: pos }).eq('id', id)
     }
   },
-  
+
   deleteItem: async (id) => {
     try {
       set({ loading: true, error: null })
       const { items } = get()
       const itemToDelete = items.find(item => item.id === id)
-      
+
       const { error } = await supabase
         .from('items')
         .delete()
         .eq('id', id)
-      
+
       if (error) throw error
-      
+
       const { addToast } = get()
       set({ items: items.filter(item => item.id !== id) })
       addToast({
         title: 'Deleted!',
-        description: `${itemToDelete?.nama || 'Item'} has been deleted successfully.`,
+        description: `${itemToDelete?.name || 'Item'} has been deleted successfully.`,
         type: 'success'
       })
     } catch (error) {
@@ -213,24 +214,24 @@ export const useStore = create<Store>((set, get) => ({
       set({ loading: false })
     }
   },
-  
+
   fetchTypes: async () => {
     if (!hasValidCredentials) {
-      set({ 
+      set({
         types: [],
         loading: false,
         error: 'Please configure your Supabase credentials in .env.local'
       })
       return
     }
-    
+
     try {
       set({ loading: true, error: null })
       const { data, error } = await supabase
         .from('types')
         .select('*')
         .order('name')
-      
+
       if (error) throw error
       set({ types: data || [] })
     } catch (error) {
@@ -239,13 +240,13 @@ export const useStore = create<Store>((set, get) => ({
       set({ loading: false })
     }
   },
-  
+
   addType: async (type) => {
     if (!hasValidCredentials) {
       set({ error: 'Please configure your Supabase credentials to add types' })
       return
     }
-    
+
     try {
       set({ loading: true, error: null })
       const { data, error } = await supabase
@@ -253,9 +254,9 @@ export const useStore = create<Store>((set, get) => ({
         .insert(type)
         .select()
         .single()
-      
+
       if (error) throw error
-      
+
       const { types } = get()
       set({ types: [...types, data].sort((a, b) => a.name.localeCompare(b.name)) })
     } catch (error) {
@@ -264,7 +265,7 @@ export const useStore = create<Store>((set, get) => ({
       set({ loading: false })
     }
   },
-  
+
   updateType: async (id, updates) => {
     try {
       set({ loading: true, error: null })
@@ -274,11 +275,11 @@ export const useStore = create<Store>((set, get) => ({
         .eq('id', id)
         .select()
         .single()
-      
+
       if (error) throw error
-      
+
       const { types } = get()
-      set({ 
+      set({
         types: types.map(type => type.id === id ? { ...type, ...data } : type)
           .sort((a, b) => a.name.localeCompare(b.name))
       })
@@ -288,7 +289,7 @@ export const useStore = create<Store>((set, get) => ({
       set({ loading: false })
     }
   },
-  
+
   deleteType: async (id) => {
     try {
       set({ loading: true, error: null })
@@ -296,9 +297,9 @@ export const useStore = create<Store>((set, get) => ({
         .from('types')
         .delete()
         .eq('id', id)
-      
+
       if (error) throw error
-      
+
       const { types } = get()
       set({ types: types.filter(type => type.id !== id) })
     } catch (error) {

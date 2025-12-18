@@ -15,7 +15,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Form, FormField, FormItem, FormLabel as RHFLabel, FormControl, FormMessage } from '@/components/ui/form'
 import { itemSchema, type ItemFormValues } from '@/lib/validation'
 import { useResetOnOpen } from '@/lib/forms'
- 
 
 interface ItemFormProps {
   open: boolean
@@ -29,13 +28,13 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
   const { addItem, updateItem, loading } = useStore()
   const form = useForm<ItemFormValues>({
     resolver: zodResolver(itemSchema),
-    defaultValues: { nama: '', type_id: '', lokasi: '', link: '', status: false, visited_at: '' },
+    defaultValues: { name: '', type_id: '', location: '', link: '', status: false, visited_at: '' },
     mode: 'onSubmit',
   })
   const resetValues = useMemo<ItemFormValues>(() => (
     item
-      ? { nama: item.nama, type_id: item.type_id.toString(), lokasi: item.lokasi, link: item.link || '', status: item.status, visited_at: item.visited_at || '' }
-      : { nama: '', type_id: '', lokasi: '', link: '', status: false, visited_at: '' }
+      ? { name: item.name, type_id: item.type_id.toString(), location: item.location, link: item.link || '', status: item.status, visited_at: item.visited_at || '' }
+      : { name: '', type_id: '', location: '', link: '', status: false, visited_at: '' }
   ), [item])
   useResetOnOpen(form, open, resetValues)
 
@@ -43,23 +42,21 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
     try {
       if (item) {
         await updateItem(item.id, {
-          nama: values.nama,
+          name: values.name,
           type_id: parseInt(values.type_id),
-          lokasi: values.lokasi,
+          location: values.location,
           link: values.link || null,
           status: values.status,
           visited_at: values.status ? values.visited_at || null : null,
-          
         })
       } else {
         await addItem({
-          nama: values.nama,
+          name: values.name,
           type_id: parseInt(values.type_id),
-          lokasi: values.lokasi,
+          location: values.location,
           link: values.link || null,
           status: values.status,
           visited_at: values.status ? values.visited_at || null : null,
-          
           category,
         })
       }
@@ -70,9 +67,9 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
   }
 
   const openGoogleMaps = () => {
-    const lokasi = form.getValues('lokasi')
-    if (lokasi) {
-      window.open(lokasi, '_blank')
+    const location = form.getValues('location')
+    if (location) {
+      window.open(location, '_blank')
     }
   }
 
@@ -95,7 +92,7 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="nama"
+              name="name"
               render={({ field }) => (
                 <FormItem>
                   <RHFLabel>Name</RHFLabel>
@@ -134,18 +131,15 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
 
             <FormField
               control={form.control}
-              name="lokasi"
+              name="location"
               render={({ field }) => (
                 <FormItem>
-              <RHFLabel>Google Maps URL</RHFLabel>
-              <div className="flex gap-2">
-                <FormControl>
-                  <Input placeholder="https://maps.app.goo.gl/..." className="flex-1" {...field} />
-                </FormControl>
-                <Button type="button" variant="outline" size="icon" onClick={openGoogleMaps} disabled={!form.getValues('lokasi')}>
-                  <MapPin className="h-4 w-4" />
-                </Button>
-              </div>
+                  <RHFLabel className="flex items-center justify-between">
+                    Location
+                  </RHFLabel>
+                  <FormControl>
+                    <Input placeholder="Google Maps URL" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -200,8 +194,6 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
                     </FormItem>
                   )}
                 />
-                
-                
               </>
             )}
 

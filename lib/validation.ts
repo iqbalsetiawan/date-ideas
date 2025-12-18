@@ -2,10 +2,10 @@ import { z } from 'zod'
 
 // Schema for validating item (date idea) form data
 export const itemSchema = z.object({
-  nama: z.string().min(1, 'Name is required'),
+  name: z.string().min(1, 'Name is required'),
   type_id: z.string().min(1, 'Type is required'),
-  lokasi: z.string().url('Invalid Google Maps URL'),
-  link: z.string().url('Invalid URL').optional().or(z.literal('')),
+  location: z.url('Invalid Google Maps URL'),
+  link: z.url('Invalid URL').optional().or(z.literal('')),
   status: z.boolean(),
   visited_at: z.string().optional().or(z.literal('')),
 })
