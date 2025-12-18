@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { MapPin, ExternalLink } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Form, FormField, FormItem, FormLabel as RHFLabel, FormControl, FormMessage } from '@/components/ui/form'
@@ -63,13 +63,6 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
       onOpenChange(false)
     } catch (error) {
       console.error(error)
-    }
-  }
-
-  const openGoogleMaps = () => {
-    const location = form.getValues('location')
-    if (location) {
-      window.open(location, '_blank')
     }
   }
 

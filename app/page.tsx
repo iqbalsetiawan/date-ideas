@@ -44,31 +44,35 @@ export default function Home() {
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Date Ideas</h1>
-          <p className="text-muted-foreground mt-2">
-            Manage your list of places to visit and food to try
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleShowTypeForm}
-            disabled={loading}
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            Manage Types
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleShowItemForm}
-            disabled={loading}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add New
-          </Button>
+      <div className="mb-8">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Date Ideas</h1>
+            <p className="text-muted-foreground mt-2">
+              Manage your list of places to visit and food to try
+            </p>
+          </div>
+          <div className="flex gap-2 w-full md:w-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleShowTypeForm}
+              disabled={loading}
+              className="flex-1 md:flex-none"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Manage Types
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleShowItemForm}
+              disabled={loading}
+              className="flex-1 md:flex-none"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add New
+            </Button>
+          </div>
         </div>
       </div>
 
