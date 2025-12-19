@@ -32,7 +32,7 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
     defaultValues: { 
       name: '', 
       type_id: '', 
-      locations: [{ label: 'Main', url: '' }], 
+      locations: [{ label: '', url: '' }], 
       status: false, 
       visited_at: '' 
     },
@@ -51,7 +51,7 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
       return { 
         name: '', 
         type_id: '', 
-        locations: [{ label: 'Main', url: '' }], 
+        locations: [{ label: '', url: '' }], 
         status: false, 
         visited_at: '' 
       }
@@ -60,7 +60,7 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
     const itemLocations = locations.filter(l => l.item_id === item.id)
     const formLocations = itemLocations.length > 0 
       ? itemLocations.map(l => ({ id: l.id, label: l.label, url: l.url }))
-      : [{ label: 'Main', url: item.location }]
+      : [{ label: '', url: item.location }]
 
     return {
       name: item.name,
@@ -217,7 +217,7 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
                       render={({ field }) => (
                         <FormItem className="flex-1">
                           <FormControl>
-                            <Input placeholder="Label (e.g. Main)" {...field} />
+                            <Input placeholder="e.g. Blok M" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
