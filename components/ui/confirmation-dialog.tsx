@@ -67,6 +67,7 @@ export function ConfirmationDialog({
             type="button"
             variant={variant === 'destructive' ? 'destructive' : 'default'}
             onClick={handleConfirm}
+            autoFocus
           >
             {confirmText}
           </Button>
