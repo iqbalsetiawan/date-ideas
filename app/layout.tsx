@@ -31,9 +31,9 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
-      icon: ["/favicon.ico", "/favicon.png"],
-      apple: "/apple-touch-icon.png",
-    },
+    icon: ["/favicon.ico", "/favicon.png"],
+    apple: "/apple-touch-icon.png",
+  },
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   alternates: {
     canonical: "/",
@@ -97,6 +97,11 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
         <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
         <meta httpEquiv="Referrer-Policy" content="origin-when-cross-origin" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(() => { try { const pref = localStorage.getItem('theme'); const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches; const isDark = pref ? pref === 'dark' : systemDark; const root = document.documentElement; root.classList[isDark ? 'add' : 'remove']('dark'); } catch (_) {} })();`,
+          }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

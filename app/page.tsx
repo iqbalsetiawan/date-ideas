@@ -11,13 +11,14 @@ import { ItemTable } from '../components/item-table'
 import { ToastContainer } from '@/components/ui/toast'
 import { LoadingOverlay, TableLoadingSkeleton } from '@/components/loading'
 import { Plus, Settings } from 'lucide-react'
+import { Sun, Moon } from 'lucide-react'
 
 const MemoizedItemTable = memo(ItemTable)
 const MemoizedItemForm = memo(ItemForm)
 const MemoizedTypeForm = memo(TypeForm)
 
 export default function Home() {
-  const { fetchItems, fetchTypes, items, types, loading, error, toasts, removeToast } = useStore()
+  const { fetchItems, fetchTypes, fetchLocations, migrateLegacyLocations, items, types, locations, loading, error, toasts, removeToast } = useStore()
   const [showItemForm, setShowItemForm] = useState(false)
   const [showTypeForm, setShowTypeForm] = useState(false)
   const [activeTab, setActiveTab] = useState('food')
@@ -25,7 +26,8 @@ export default function Home() {
   useEffect(() => {
     fetchItems()
     fetchTypes()
-  }, [fetchItems, fetchTypes])
+    fetchLocations()
+  }, [fetchItems, fetchTypes, fetchLocations])
 
   const { foodItems, placeItems, foodTypes, placeTypes } = useMemo(() => {
     return {
@@ -36,11 +38,37 @@ export default function Home() {
     }
   }, [items, types])
 
+  const needsMigration = useMemo(() => {
+    if (loading || items.length === 0) return false
+    const itemIdsWithLocations = new Set(locations.map(l => l.item_id))
+    return items.some(item => item.location && !itemIdsWithLocations.has(item.id))
+  }, [items, locations, loading])
+
   const handleShowItemForm = useCallback(() => setShowItemForm(true), [])
   const handleHideItemForm = useCallback(() => setShowItemForm(false), [])
   const handleShowTypeForm = useCallback(() => setShowTypeForm(true), [])
   const handleHideTypeForm = useCallback(() => setShowTypeForm(false), [])
   const handleTabChange = useCallback((value: string) => setActiveTab(value), [])
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    try {
+      const pref = typeof window !== 'undefined' ? localStorage.getItem('theme') : null
+      if (pref === 'light' || pref === 'dark') return pref
+      return (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'
+    } catch {
+      return 'light'
+    }
+  })
+
+  useEffect(() => {
+    try {
+      const root = document.documentElement
+      if (theme === 'dark') root.classList.add('dark')
+      else root.classList.remove('dark')
+      localStorage.setItem('theme', theme)
+    } catch (error) {
+      console.error('Failed to apply theme. Please try again.', error)
+    }
+  }, [theme])
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
@@ -52,7 +80,18 @@ export default function Home() {
               Manage your list of places to visit and food to try
             </p>
           </div>
-          <div className="flex gap-2 w-full md:w-auto">
+          <div className="flex gap-2 w-full md:w-auto items-center">
+            {needsMigration && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => migrateLegacyLocations()}
+                disabled={loading}
+                className="hidden md:flex bg-amber-100 text-amber-900 hover:bg-amber-200"
+              >
+                Migrate Data
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -72,6 +111,14 @@ export default function Home() {
               <Plus className="h-4 w-4 mr-2" />
               Add New
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              aria-label="Toggle theme"
+              onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+            >
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
           </div>
         </div>
       </div>
@@ -86,9 +133,9 @@ export default function Home() {
             </div>
             {error.includes('Supabase credentials') && (
               <div className="mt-2 text-xs text-orange-700">
-                1. Copy .env.local.example to .env.local<br/>
-                2. Add your Supabase project URL and anon key<br/>
-                3. Run the SQL schema in your Supabase dashboard<br/>
+                1. Copy .env.local.example to .env.local<br />
+                2. Add your Supabase project URL and anon key<br />
+                3. Run the SQL schema in your Supabase dashboard<br />
                 4. Restart the development server
               </div>
             )}
@@ -112,8 +159,8 @@ export default function Home() {
                 {loading && foodItems.length === 0 ? (
                   <TableLoadingSkeleton />
                 ) : (
-                  <MemoizedItemTable 
-                    items={foodItems} 
+                  <MemoizedItemTable
+                    items={foodItems}
                     types={foodTypes}
                     category="food"
                     loading={loading}
@@ -132,8 +179,8 @@ export default function Home() {
                 {loading && placeItems.length === 0 ? (
                   <TableLoadingSkeleton />
                 ) : (
-                  <MemoizedItemTable 
-                    items={placeItems} 
+                  <MemoizedItemTable
+                    items={placeItems}
                     types={placeTypes}
                     category="place"
                     loading={loading}
@@ -158,7 +205,7 @@ export default function Home() {
         types={types}
         items={items}
       />
-      
+
       <ToastContainer toasts={toasts} onClose={removeToast} />
     </div>
   )

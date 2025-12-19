@@ -69,6 +69,38 @@ export type Database = {
           created_at?: string
         }
       }
+      item_locations: {
+        Row: {
+          id: number
+          item_id: number
+          label: string
+          url: string
+          status: boolean
+          visited_at: string | null
+          position: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          item_id: number
+          label: string
+          url: string
+          status?: boolean
+          visited_at?: string | null
+          position?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: number
+          item_id?: number
+          label?: string
+          url?: string
+          status?: boolean
+          visited_at?: string | null
+          position?: number | null
+          created_at?: string
+        }
+      }
     }
   }
 }
@@ -77,3 +109,5 @@ export type Item = Database['public']['Tables']['items']['Row']
 export type Type = Database['public']['Tables']['types']['Row']
 export type ItemInsert = Database['public']['Tables']['items']['Insert']
 export type TypeInsert = Database['public']['Tables']['types']['Insert']
+export type ItemLocation = Database['public']['Tables']['item_locations']['Row']
+export type ItemLocationInsert = Database['public']['Tables']['item_locations']['Insert']

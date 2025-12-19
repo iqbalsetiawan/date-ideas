@@ -10,12 +10,15 @@ import { restrictToVerticalAxis, restrictToParentElement } from '@dnd-kit/modifi
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ItemForm } from './item-form'
 import { VisitForm } from './visit-form'
+import { LocationVisitForm } from './location-visit-form'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
-import { MapPin, Edit, Trash2, CheckCircle, GripVertical } from 'lucide-react'
+import { MapPin, Edit, Trash2, CheckCircle, GripVertical, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatDate } from '@/lib/utils'
+import { ItemLocation } from '@/lib/supabase'
 
 interface ItemTableProps {
   items: Item[]
@@ -25,14 +28,17 @@ interface ItemTableProps {
 }
 
 export function ItemTable({ items, types, category, loading }: ItemTableProps) {
-  const { updateItem, deleteItem, reorderItems } = useStore()
+  const { updateItem, deleteItem, reorderItems, locations, updateLocation, reorderLocations } = useStore()
   const [editingItem, setEditingItem] = useState<Item | null>(null)
   const [showEditForm, setShowEditForm] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<Item | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [visitedItem, setVisitedItem] = useState<Item | null>(null)
   const [showVisitedForm, setShowVisitedForm] = useState(false)
+  const [visitedLocation, setVisitedLocation] = useState<ItemLocation | null>(null)
+  const [showLocationVisitForm, setShowLocationVisitForm] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [locationItem, setLocationItem] = useState<Item | null>(null)
 
   useEffect(() => {
     const mql = window.matchMedia('(max-width: 768px)')
@@ -65,6 +71,19 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
     }
   }
 
+  const handleLocationStatusChange = async (location: ItemLocation, checked: boolean) => {
+    try {
+      if (checked) {
+        setVisitedLocation(location)
+        setShowLocationVisitForm(true)
+      } else {
+        await updateLocation(location.id, { status: false, visited_at: null })
+      }
+    } catch (error) {
+      console.error('Error updating location status:', error)
+    }
+  }
+
   const handleEdit = (item: Item) => {
     setEditingItem(item)
     setShowEditForm(true)
@@ -89,7 +108,7 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
     window.open(url, '_blank')
   }
 
-  if (loading) {
+  if (loading && items.length === 0) {
     return (
       <div className="flex items-center justify-center py-8">
         <div className="text-muted-foreground">Loading...</div>
@@ -122,6 +141,35 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
 
   const Row = ({ item }: { item: Item }) => {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id })
+    const itemBranches = locations.filter(l => l.item_id === item.id)
+    const primaryUrl = itemBranches[0]?.url || item.location
+    const hasMultipleBranches = itemBranches.length > 1
+
+    // Check if all branches are visited
+    const allBranchesVisited = hasMultipleBranches && itemBranches.length > 0 && itemBranches.every(b => b.status)
+    const someBranchesVisited = hasMultipleBranches && itemBranches.some(b => b.status)
+    const totalCount = hasMultipleBranches ? itemBranches.length : 1
+    const visitedCount = hasMultipleBranches ? itemBranches.filter(b => b.status).length : (item.status ? 1 : 0)
+
+    // Determine effective status (visual only)
+    const isCompleted = hasMultipleBranches ? allBranchesVisited : item.status
+    const visitedLabel = hasMultipleBranches
+      ? (allBranchesVisited ? 'Completed' : (someBranchesVisited ? 'Visited' : 'Not visited'))
+      : (item.status ? 'Visited' : 'Not visited')
+    const visitedBadgeClasses =
+      visitedLabel === 'Completed'
+        ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-700/10'
+        : visitedLabel === 'Visited'
+          ? 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-700/10'
+          : 'bg-neutral-100 text-neutral-700 ring-1 ring-inset ring-neutral-700/10'
+    const visitDateText = hasMultipleBranches ? '-' : (item.visited_at ? formatDate(item.visited_at) : '-')
+    const progressBadgeClasses =
+      visitedCount === totalCount && totalCount > 0
+        ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-700/10'
+        : visitedCount > 0
+          ? 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-700/10'
+          : 'bg-neutral-100 text-neutral-700 ring-1 ring-inset ring-neutral-700/10'
+
     return (
       <TableRow
         ref={setNodeRef}
@@ -139,50 +187,76 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
             <GripVertical className="h-4 w-4" />
           </button>
         </TableCell>
-        <TableCell>
+        <TableCell className="text-center p-0">
           <div className="flex items-center justify-center">
-            {item.status ? (
-              <CheckCircle className="h-5 w-5 text-green-600" />
-            ) : (
-              <Checkbox
-                checked={item.status}
-                onCheckedChange={(checked) =>
-                  handleStatusChange(item, checked as boolean)
-                }
-              />
-            )}
+            {
+              (hasMultipleBranches ? isCompleted : item.status) ? (
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              ) : (
+                !hasMultipleBranches && (
+                  <Checkbox
+                    checked={item.status}
+                    onCheckedChange={(checked) =>
+                      handleStatusChange(item, checked as boolean)
+                    }
+                  />
+                )
+              )
+            }
           </div>
         </TableCell>
         <TableCell className="font-medium">
-          <div className={cn(item.status ? 'line-through opacity-60' : '')}>
+          <div className={cn(isCompleted ? 'line-through opacity-60' : '')}>
             {item.name}
           </div>
         </TableCell>
-        <TableCell className="hidden md:table-cell">
-          <span className={cn('inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10', item.status ? 'opacity-60' : '')}>
+        <TableCell className="hidden md:table-cell text-center">
+          <span className={cn('inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10', isCompleted ? 'opacity-60' : '')}>
             {getTypeName(item.type_id)}
           </span>
         </TableCell>
         <TableCell>
           <div className={cn('flex items-center gap-2')}>
-            <span className={cn('truncate max-w-[140px] md:max-w-[200px]', item.status ? 'opacity-60' : '')}>{item.location}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => openGoogleMaps(item.location)}
-              className="h-6 w-6 p-0"
-            >
-              <MapPin className="h-3 w-3" />
-            </Button>
+            {hasMultipleBranches ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLocationItem(item)}
+                className="h-6 px-2 text-xs"
+              >
+                <MapPin className="h-3 w-3 mr-1" />
+                {itemBranches.length} Locations
+              </Button>
+            ) : (
+              <>
+                <span className={cn('truncate max-w-[140px] md:max-w-[200px]', isCompleted ? 'opacity-60' : '')}>{primaryUrl}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => openGoogleMaps(primaryUrl)}
+                  className="h-6 w-6 p-0"
+                >
+                  <MapPin className="h-3 w-3" />
+                </Button>
+              </>
+            )}
           </div>
         </TableCell>
-        <TableCell className="hidden md:table-cell">
-          <span className="text-sm text-muted-foreground">
-            {item.status && item.visited_at ? formatDate(item.visited_at) : '-'}
+        <TableCell className="hidden md:table-cell text-center">
+          <span className={cn('inline-flex items-center rounded-full px-2 py-1 text-xs font-medium', progressBadgeClasses)}>
+            {visitedCount}/{totalCount}
           </span>
         </TableCell>
+        <TableCell className="hidden md:table-cell text-center">
+          <span className={cn('inline-flex items-center rounded-full px-2 py-1 text-xs font-medium', visitedBadgeClasses)}>
+            {visitedLabel}
+          </span>
+        </TableCell>
+        <TableCell className="hidden md:table-cell text-center">
+          <span className="text-sm text-muted-foreground">{visitDateText}</span>
+        </TableCell>
         <TableCell>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center justify-center gap-1">
             <Button
               variant="ghost"
               size="sm"
@@ -207,6 +281,34 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
 
   const MobileRow = ({ item }: { item: Item }) => {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id })
+    const itemBranches = locations.filter(l => l.item_id === item.id)
+    const primaryUrl = itemBranches[0]?.url || item.location
+    const hasMultipleBranches = itemBranches.length > 1
+
+    // Check if all branches are visited
+    const allBranchesVisited = hasMultipleBranches && itemBranches.length > 0 && itemBranches.every(b => b.status)
+    const someBranchesVisited = hasMultipleBranches && itemBranches.some(b => b.status)
+    const totalCount = hasMultipleBranches ? itemBranches.length : 1
+    const visitedCount = hasMultipleBranches ? itemBranches.filter(b => b.status).length : (item.status ? 1 : 0)
+
+    // Determine effective status (visual only)
+    const isCompleted = hasMultipleBranches ? allBranchesVisited : item.status
+    const visitedLabel = hasMultipleBranches
+      ? (allBranchesVisited ? 'Completed' : (someBranchesVisited ? 'Visited' : 'Not visited'))
+      : (item.status ? 'Visited' : 'Not visited')
+    const visitedBadgeClasses =
+      visitedLabel === 'Completed'
+        ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-700/10'
+        : visitedLabel === 'Visited'
+          ? 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-700/10'
+          : 'bg-neutral-100 text-neutral-700 ring-1 ring-inset ring-neutral-700/10'
+    const progressBadgeClasses =
+      visitedCount === totalCount && totalCount > 0
+        ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-700/10'
+        : visitedCount > 0
+          ? 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-700/10'
+          : 'bg-neutral-100 text-neutral-700 ring-1 ring-inset ring-neutral-700/10'
+
     return (
       <div
         ref={setNodeRef}
@@ -224,37 +326,56 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
           >
             <GripVertical className="h-4 w-4" />
           </button>
-          <div className={cn('font-medium flex-1', item.status ? 'line-through opacity-60' : '')}>
+          <div className={cn('font-medium flex-1', isCompleted ? 'line-through opacity-60' : '')}>
             {item.name}
           </div>
-          <span className={cn('inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10', item.status ? 'opacity-60' : '')}>
+          <span className={cn('inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10', isCompleted ? 'opacity-60' : '')}>
             {getTypeName(item.type_id)}
           </span>
         </div>
         <div className="mt-2 flex items-center justify-evenly gap-2">
           <div className="flex items-center gap-2">
-            {item.status ? (
-              <CheckCircle className="h-5 w-5 text-green-600" />
-            ) : (
-              <Checkbox
-                checked={item.status}
-                onCheckedChange={(checked) =>
-                  handleStatusChange(item, checked as boolean)
-                }
-              />
-            )}
-            <span className="text-sm text-muted-foreground">
-              {item.status && item.visited_at ? formatDate(item.visited_at) : 'Not visited'}
+            {
+              (hasMultipleBranches ? isCompleted : item.status) ? (
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              ) : (
+                !hasMultipleBranches && (
+                  <Checkbox
+                    checked={item.status}
+                    onCheckedChange={(checked) =>
+                      handleStatusChange(item, checked as boolean)
+                    }
+                  />
+                )
+              )
+            }
+            <span className={cn('inline-flex items-center rounded-full px-2 py-1 text-xs font-medium', progressBadgeClasses)}>
+              {visitedCount}/{totalCount}
+            </span>
+            <span className={cn('inline-flex items-center rounded-full px-2 py-1 text-xs font-medium', visitedBadgeClasses)}>
+              {visitedLabel}
             </span>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => openGoogleMaps(item.location)}
-            className="h-8 w-8 p-0"
-          >
-            <MapPin className="h-4 w-4" />
-          </Button>
+          {hasMultipleBranches ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLocationItem(item)}
+              className="h-8 px-2 text-xs"
+            >
+              <MapPin className="h-4 w-4 mr-1" />
+              {itemBranches.length}
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => openGoogleMaps(primaryUrl)}
+              className="h-8 w-8 p-0"
+            >
+              <MapPin className="h-4 w-4" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -276,6 +397,10 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
     )
   }
 
+  const selectedItemBranches = locationItem
+    ? locations.filter(l => l.item_id === locationItem.id)
+    : []
+
   return (
     <>
       <DndContext onDragEnd={onDragEnd} modifiers={[restrictToVerticalAxis, restrictToParentElement]}>
@@ -285,12 +410,14 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10"></TableHead>
-                  <TableHead className="w-[50px]">Status</TableHead>
+                  <TableHead className="w-[50px] text-center">Complete</TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead className="hidden md:table-cell">Type</TableHead>
+                  <TableHead className="hidden md:table-cell text-center">Type</TableHead>
                   <TableHead>Location</TableHead>
-                  <TableHead className="hidden md:table-cell">Visited</TableHead>
-                  <TableHead className="w-[120px]">Actions</TableHead>
+                  <TableHead className="hidden md:table-cell text-center">Progress</TableHead>
+                  <TableHead className="hidden md:table-cell text-center">Visited</TableHead>
+                  <TableHead className="hidden md:table-cell text-center">Date</TableHead>
+                  <TableHead className="w-[120px] text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
@@ -349,6 +476,106 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
         variant="destructive"
         onConfirm={confirmDelete}
       />
+
+      <Dialog open={!!locationItem} onOpenChange={(open) => !open && setLocationItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Locations for {locationItem?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-2 mt-4">
+            {selectedItemBranches.length > 0 ? (
+              <DndContext
+                onDragEnd={(event) => {
+                  const { active, over } = event
+                  if (!over || active.id === over.id || !locationItem) return
+                  const ids = selectedItemBranches.map(b => b.id)
+                  const oldIndex = ids.indexOf(active.id as number)
+                  const newIndex = ids.indexOf(over.id as number)
+                  if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return
+                  const newIds = arrayMove(ids, oldIndex, newIndex)
+                  reorderLocations(locationItem.id, newIds)
+                }}
+                modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+              >
+                <SortableContext items={selectedItemBranches.map(b => b.id)} strategy={verticalListSortingStrategy}>
+                  {selectedItemBranches.map((branch) => (
+                    <LocationRow
+                      key={branch.id}
+                      branch={branch}
+                      onToggle={(checked) => handleLocationStatusChange(branch, checked)}
+                      onOpenMap={() => openGoogleMaps(branch.url)}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
+            ) : (
+              <div className="flex items-center justify-between p-3 border rounded-md">
+                <span className="font-medium">Main</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => locationItem && openGoogleMaps(locationItem.location)}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Open Map
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {visitedLocation && (
+        <LocationVisitForm
+          open={showLocationVisitForm}
+          onOpenChange={(open) => {
+            setShowLocationVisitForm(open)
+            if (!open) setVisitedLocation(null)
+          }}
+          location={visitedLocation}
+        />
+      )}
     </>
+  )
+}
+
+function LocationRow({ branch, onToggle, onOpenMap }: { branch: ItemLocation, onToggle: (checked: boolean) => void, onOpenMap: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: branch.id })
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className="flex items-center justify-between p-3 border rounded-md"
+      {...attributes}
+    >
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          title="Drag to reorder"
+          className="h-6 w-6 flex items-center justify-center cursor-grab"
+          {...listeners}
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+        <Checkbox
+          checked={branch.status || false}
+          onCheckedChange={(checked) => onToggle(checked as boolean)}
+        />
+        <div className="flex flex-col">
+          <span className={cn('font-medium', branch.status && 'line-through opacity-60')}>{branch.label}</span>
+          {branch.status && branch.visited_at && (
+            <span className="text-xs text-muted-foreground">Visited: {formatDate(branch.visited_at)}</span>
+          )}
+        </div>
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onOpenMap}
+      >
+        <ExternalLink className="h-4 w-4 mr-2" />
+        Open Map
+      </Button>
+    </div>
   )
 }

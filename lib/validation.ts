@@ -4,7 +4,11 @@ import { z } from 'zod'
 export const itemSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   type_id: z.string().min(1, 'Type is required'),
-  location: z.url('Invalid URL'),
+  locations: z.array(z.object({
+    id: z.number().optional(),
+    label: z.string().min(1, 'Label is required'),
+    url: z.url('Invalid URL'),
+  })).min(1, 'At least one location is required'),
   status: z.boolean(),
   visited_at: z.string().optional().or(z.literal('')),
 })
