@@ -23,11 +23,22 @@ export default function Home() {
   const [showItemForm, setShowItemForm] = useState(false)
   const [showTypeForm, setShowTypeForm] = useState(false)
   const [activeTab, setActiveTab] = useState('food')
+  const [mounted, setMounted] = useState(false)
+  const [initializing, setInitializing] = useState(true)
 
   useEffect(() => {
-    fetchItems()
-    fetchTypes()
-    fetchLocations()
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        await Promise.all([fetchItems(), fetchTypes(), fetchLocations()])
+      } finally {
+        setInitializing(false)
+      }
+    }
+    init()
   }, [fetchItems, fetchTypes, fetchLocations])
 
   const { foodItems, placeItems, foodTypes, placeTypes } = useMemo(() => {
@@ -84,10 +95,10 @@ export default function Home() {
   const sortedPlaceItems = useMemo(() => sortItems(placeItems, locations), [placeItems, locations, sortItems])
 
   const needsMigration = useMemo(() => {
-    if (loading || items.length === 0) return false
+    if (initializing || loading || items.length === 0) return false
     const itemIdsWithLocations = new Set(locations.map(l => l.item_id))
     return items.some(item => item.location && !itemIdsWithLocations.has(item.id))
-  }, [items, locations, loading])
+  }, [items, locations, loading, initializing])
 
   const handleShowItemForm = useCallback(() => setShowItemForm(true), [])
   const handleHideItemForm = useCallback(() => setShowItemForm(false), [])
@@ -162,9 +173,10 @@ export default function Home() {
                 size="sm"
                 aria-label="Toggle theme"
                 onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+                disabled={loading}
                 className="flex-none"
               >
-                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                {mounted && theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
             </div>
           </div>
@@ -192,7 +204,7 @@ export default function Home() {
       </div>
 
       <div className="container mx-auto px-6 pb-6 max-w-7xl flex-1 flex flex-col overflow-hidden min-h-0">
-        <LoadingOverlay isLoading={loading && items.length === 0} loadingText="Loading your date ideas..." className="flex-1 flex flex-col min-h-0">
+        <LoadingOverlay isLoading={initializing || (loading && items.length === 0)} loadingText="Loading your date ideas..." className="flex-1 flex flex-col min-h-0">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 flex flex-col overflow-hidden">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="food">Food ({foodItems.length})</TabsTrigger>
