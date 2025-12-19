@@ -25,9 +25,10 @@ interface ItemTableProps {
   types: Type[]
   category: 'food' | 'place'
   loading: boolean
+  allowDrag?: boolean
 }
 
-export function ItemTable({ items, types, category, loading }: ItemTableProps) {
+export function ItemTable({ items, types, category, loading, allowDrag = true }: ItemTableProps) {
   const { updateItem, deleteItem, reorderItems, locations, updateLocation, reorderLocations } = useStore()
   const [editingItem, setEditingItem] = useState<Item | null>(null)
   const [showEditForm, setShowEditForm] = useState(false)
@@ -140,7 +141,7 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
   }
 
   const Row = ({ item }: { item: Item }) => {
-    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id })
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id, disabled: !allowDrag })
     const itemBranches = locations.filter(l => l.item_id === item.id)
     const primaryUrl = itemBranches[0]?.url || item.location
     const hasMultipleBranches = itemBranches.length > 1
@@ -162,7 +163,13 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
         : visitedLabel === 'Visited'
           ? 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-700/10'
           : 'bg-neutral-100 text-neutral-700 ring-1 ring-inset ring-neutral-700/10'
-    const visitDateText = hasMultipleBranches ? '-' : (item.visited_at ? formatDate(item.visited_at) : '-')
+    const latestBranchDateStr = hasMultipleBranches
+      ? itemBranches
+          .filter(b => !!b.visited_at)
+          .map(b => b.visited_at as string)
+          .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] || null
+      : item.visited_at
+    const visitDateText = latestBranchDateStr ? formatDate(latestBranchDateStr) : '-'
     const progressBadgeClasses =
       visitedCount === totalCount && totalCount > 0
         ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-700/10'
@@ -180,9 +187,9 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
         <TableCell className="w-10">
           <button
             type="button"
-            title="Drag to reorder"
-            className="h-8 w-8 flex items-center justify-center cursor-grab"
-            {...listeners}
+            title={allowDrag ? "Drag to reorder" : "Switch to Custom sort to reorder"}
+            className={cn("h-8 w-8 flex items-center justify-center", allowDrag ? "cursor-grab" : "cursor-not-allowed opacity-40")}
+            {...(allowDrag ? listeners : {})}
           >
             <GripVertical className="h-4 w-4" />
           </button>
@@ -280,7 +287,7 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
   }
 
   const MobileRow = ({ item }: { item: Item }) => {
-    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id })
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id, disabled: !allowDrag })
     const itemBranches = locations.filter(l => l.item_id === item.id)
     const primaryUrl = itemBranches[0]?.url || item.location
     const hasMultipleBranches = itemBranches.length > 1
@@ -320,9 +327,9 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            title="Drag to reorder"
-            className="h-8 w-8 flex items-center justify-center cursor-grab shrink-0"
-            {...listeners}
+            title={allowDrag ? "Drag to reorder" : "Switch to Custom sort to reorder"}
+            className={cn("h-8 w-8 flex items-center justify-center shrink-0", allowDrag ? "cursor-grab" : "cursor-not-allowed opacity-40")}
+            {...(allowDrag ? listeners : {})}
           >
             <GripVertical className="h-4 w-4" />
           </button>
@@ -403,43 +410,79 @@ export function ItemTable({ items, types, category, loading }: ItemTableProps) {
 
   return (
     <>
-      <DndContext onDragEnd={onDragEnd} modifiers={[restrictToVerticalAxis, restrictToParentElement]}>
-        {!isMobile && (
-          <div className="rounded-md border overflow-x-auto md:overflow-visible">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-10"></TableHead>
-                  <TableHead className="w-[50px] text-center">Complete</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead className="hidden md:table-cell text-center">Type</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead className="hidden md:table-cell text-center">Progress</TableHead>
-                  <TableHead className="hidden md:table-cell text-center">Visited</TableHead>
-                  <TableHead className="hidden md:table-cell text-center">Date</TableHead>
-                  <TableHead className="w-[120px] text-center">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+      {allowDrag ? (
+        <DndContext onDragEnd={onDragEnd} modifiers={[restrictToVerticalAxis, restrictToParentElement]}>
+          {!isMobile && (
+            <div className="rounded-md border overflow-x-auto md:overflow-visible">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10"></TableHead>
+                    <TableHead className="w-[50px] text-center">Complete</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead className="hidden md:table-cell text-center">Type</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead className="hidden md:table-cell text-center">Progress</TableHead>
+                    <TableHead className="hidden md:table-cell text-center">Visited</TableHead>
+                    <TableHead className="hidden md:table-cell text-center">Date</TableHead>
+                    <TableHead className="w-[120px] text-center">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                  <TableBody>
+                    {items.map((item) => (
+                      <Row key={item.id} item={item} />
+                    ))}
+                  </TableBody>
+                </SortableContext>
+              </Table>
+            </div>
+          )}
+          {isMobile && (
+            <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-2">
+                {items.map((item) => (
+                  <MobileRow key={item.id} item={item} />
+                ))}
+              </div>
+            </SortableContext>
+          )}
+        </DndContext>
+      ) : (
+        <>
+          {!isMobile && (
+            <div className="rounded-md border overflow-x-auto md:overflow-visible">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10"></TableHead>
+                    <TableHead className="w-[50px] text-center">Complete</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead className="hidden md:table-cell text-center">Type</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead className="hidden md:table-cell text-center">Progress</TableHead>
+                    <TableHead className="hidden md:table-cell text-center">Visited</TableHead>
+                    <TableHead className="hidden md:table-cell text-center">Date</TableHead>
+                    <TableHead className="w-[120px] text-center">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
                 <TableBody>
                   {items.map((item) => (
                     <Row key={item.id} item={item} />
                   ))}
                 </TableBody>
-              </SortableContext>
-            </Table>
-          </div>
-        )}
-        {isMobile && (
-          <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+              </Table>
+            </div>
+          )}
+          {isMobile && (
             <div className="space-y-2">
               {items.map((item) => (
                 <MobileRow key={item.id} item={item} />
               ))}
             </div>
-          </SortableContext>
-        )}
-      </DndContext>
+          )}
+        </>
+      )}
 
       <ItemForm
         open={showEditForm}

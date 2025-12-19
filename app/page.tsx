@@ -12,6 +12,7 @@ import { ToastContainer } from '@/components/ui/toast'
 import { LoadingOverlay, TableLoadingSkeleton } from '@/components/loading'
 import { Plus, Settings } from 'lucide-react'
 import { Sun, Moon } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 const MemoizedItemTable = memo(ItemTable)
 const MemoizedItemForm = memo(ItemForm)
@@ -37,6 +38,50 @@ export default function Home() {
       placeTypes: types.filter(type => type.category === 'place')
     }
   }, [items, types])
+
+  const [sortBy, setSortBy] = useState<'custom' | 'name' | 'visited' | 'date'>('custom')
+
+  const sortItems = useCallback((list: typeof items, locs: typeof locations) => {
+    const withDerived = list.map(item => {
+      const itemBranches = locs.filter(l => l.item_id === item.id)
+      const hasMultiple = itemBranches.length > 1
+      const allVisited = hasMultiple && itemBranches.length > 0 && itemBranches.every(b => b.status)
+      const someVisited = hasMultiple && itemBranches.some(b => b.status)
+      const statusRank = hasMultiple ? (allVisited ? 2 : (someVisited ? 1 : 0)) : (item.status ? 1 : 0)
+      const latestDateStr = hasMultiple
+        ? itemBranches.filter(b => !!b.visited_at).map(b => b.visited_at as string).sort((a, b) => (new Date(b).getTime() - new Date(a).getTime()))[0] || null
+        : item.visited_at
+      const latestDate = latestDateStr ? new Date(latestDateStr) : null
+      return { item, statusRank, latestDate }
+    })
+    switch (sortBy) {
+      case 'name':
+        return withDerived
+          .slice()
+          .sort((a, b) => a.item.name.localeCompare(b.item.name))
+          .map(d => d.item)
+      case 'visited':
+        return withDerived
+          .slice()
+          .sort((a, b) => b.statusRank - a.statusRank)
+          .map(d => d.item)
+      case 'date':
+        return withDerived
+          .slice()
+          .sort((a, b) => {
+            const at = a.latestDate ? a.latestDate.getTime() : -Infinity
+            const bt = b.latestDate ? b.latestDate.getTime() : -Infinity
+            return bt - at
+          })
+          .map(d => d.item)
+      case 'custom':
+      default:
+        return list.slice().sort((a, b) => (a.position || 0) - (b.position || 0))
+    }
+  }, [sortBy])
+
+  const sortedFoodItems = useMemo(() => sortItems(foodItems, locations), [foodItems, locations, sortItems])
+  const sortedPlaceItems = useMemo(() => sortItems(placeItems, locations), [placeItems, locations, sortItems])
 
   const needsMigration = useMemo(() => {
     if (loading || items.length === 0) return false
@@ -92,6 +137,20 @@ export default function Home() {
                 Migrate Data
               </Button>
             )}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Sort</span>
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as 'custom' | 'name' | 'visited' | 'date')}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="custom">Custom</SelectItem>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="visited">Visited</SelectItem>
+                  <SelectItem value="date">Date</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Button
               variant="outline"
               size="sm"
@@ -160,10 +219,11 @@ export default function Home() {
                   <TableLoadingSkeleton />
                 ) : (
                   <MemoizedItemTable
-                    items={foodItems}
+                    items={sortedFoodItems}
                     types={foodTypes}
                     category="food"
                     loading={loading}
+                    allowDrag={sortBy === 'custom'}
                   />
                 )}
               </CardContent>
@@ -180,10 +240,11 @@ export default function Home() {
                   <TableLoadingSkeleton />
                 ) : (
                   <MemoizedItemTable
-                    items={placeItems}
+                    items={sortedPlaceItems}
                     types={placeTypes}
                     category="place"
                     loading={loading}
+                    allowDrag={sortBy === 'custom'}
                   />
                 )}
               </CardContent>
