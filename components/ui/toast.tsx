@@ -43,7 +43,7 @@ export function Toast({ id, title, description, type = 'info', duration = 4000, 
       </div>
       <button
         onClick={() => onClose(id)}
-        className="inline-flex h-6 w-6 items-center justify-center rounded-md opacity-70 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2"
+        className="inline-flex h-6 w-6 items-center justify-center rounded-md opacity-70 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
       >
         <X className="h-4 w-4" />
       </button>

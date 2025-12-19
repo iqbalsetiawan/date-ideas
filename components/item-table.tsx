@@ -185,14 +185,15 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
         {...attributes}
       >
         <TableCell className="w-10">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             title={allowDrag ? "Drag to reorder" : "Switch to Custom sort to reorder"}
-            className={cn("h-8 w-8 flex items-center justify-center", allowDrag ? "cursor-grab" : "cursor-not-allowed opacity-40")}
+            className={cn("h-8 w-8 flex items-center justify-center p-0", allowDrag ? "cursor-grab" : "cursor-not-allowed opacity-40")}
             {...(allowDrag ? listeners : {})}
           >
             <GripVertical className="h-4 w-4" />
-          </button>
+          </Button>
         </TableCell>
         <TableCell className="text-center p-0">
           <div className="flex items-center justify-center">
@@ -325,14 +326,15 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
         className="rounded-md border p-3 bg-background"
       >
         <div className="flex items-center gap-2">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             title={allowDrag ? "Drag to reorder" : "Switch to Custom sort to reorder"}
-            className={cn("h-8 w-8 flex items-center justify-center shrink-0", allowDrag ? "cursor-grab" : "cursor-not-allowed opacity-40")}
+            className={cn("h-8 w-8 flex items-center justify-center shrink-0 p-0", allowDrag ? "cursor-grab" : "cursor-not-allowed opacity-40")}
             {...(allowDrag ? listeners : {})}
           >
             <GripVertical className="h-4 w-4" />
-          </button>
+          </Button>
           <div className={cn('font-medium flex-1', isCompleted ? 'line-through opacity-60' : '')}>
             {item.name}
           </div>
