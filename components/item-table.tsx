@@ -416,7 +416,7 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
             <div className="rounded-md border overflow-x-auto md:overflow-visible">
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="sticky top-0 z-10 bg-background hover:bg-background">
                     <TableHead className="w-10"></TableHead>
                     <TableHead className="w-[50px] text-center">Complete</TableHead>
                     <TableHead>Name</TableHead>
@@ -454,7 +454,7 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
             <div className="rounded-md border overflow-x-auto md:overflow-visible">
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="sticky top-0 z-10 bg-background hover:bg-background">
                     <TableHead className="w-10"></TableHead>
                     <TableHead className="w-[50px] text-center">Complete</TableHead>
                     <TableHead>Name</TableHead>
