@@ -87,7 +87,23 @@ export default function Home() {
           .map(d => d.item)
       case 'custom':
       default:
-        return list.slice().sort((a, b) => (a.position || 0) - (b.position || 0))
+        return withDerived
+          .slice()
+          .sort((a, b) => {
+            const dateA = a.latestDate ? a.latestDate.getTime() : null
+            const dateB = b.latestDate ? b.latestDate.getTime() : null
+            const hasDateA = dateA !== null
+            const hasDateB = dateB !== null
+
+            if (hasDateA && hasDateB) {
+              return dateB! - dateA!
+            }
+            if (hasDateA) return 1
+            if (hasDateB) return -1
+
+            return (a.item.position || 0) - (b.item.position || 0)
+          })
+          .map(d => d.item)
     }
   }, [sortBy])
 
