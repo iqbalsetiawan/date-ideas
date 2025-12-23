@@ -10,7 +10,7 @@ import { restrictToVerticalAxis, restrictToParentElement } from '@dnd-kit/modifi
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { ItemForm } from './item-form'
 import { VisitForm } from './visit-form'
 import { LocationVisitForm } from './location-visit-form'
@@ -526,8 +526,11 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Locations for {locationItem?.name}</DialogTitle>
+            <DialogDescription>
+              Reorder branches by dragging, mark visited, or open maps.
+            </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-2 mt-4">
+          <div className="grid gap-2">
             {selectedItemBranches.length > 0 ? (
               <DndContext
                 onDragEnd={(event) => {

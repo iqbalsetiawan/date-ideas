@@ -6,7 +6,7 @@ import { Type, Item } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Trash2, Edit } from 'lucide-react'
 import { useForm } from 'react-hook-form'
@@ -98,6 +98,9 @@ export function TypeForm({ open, onOpenChange, types, items }: TypeFormProps) {
       <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Manage Types</DialogTitle>
+          <DialogDescription>
+            Create and manage categories used by items. Types group items under Food or Place.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-6">
