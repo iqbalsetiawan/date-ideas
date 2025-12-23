@@ -30,7 +30,7 @@ interface ItemTableProps {
 }
 
 export function ItemTable({ items, types, category, loading, allowDrag = true }: ItemTableProps) {
-  const { updateItem, deleteItem, reorderItems, locations, updateLocation, reorderLocations } = useStore()
+  const { updateItem, deleteItem, reorderItems, locations, updateLocation } = useStore()
   const [editingItem, setEditingItem] = useState<Item | null>(null)
   const [showEditForm, setShowEditForm] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<Item | null>(null)
@@ -560,35 +560,21 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
           <DialogHeader>
             <DialogTitle>Locations for {locationItem?.name}</DialogTitle>
             <DialogDescription>
-              Reorder branches by dragging, mark visited, or open maps.
+              Mark branches as visited or open in maps.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">
             {selectedItemBranches.length > 0 ? (
-              <DndContext
-                onDragEnd={(event) => {
-                  const { active, over } = event
-                  if (!over || active.id === over.id || !locationItem) return
-                  const ids = selectedItemBranches.map(b => b.id)
-                  const oldIndex = ids.indexOf(active.id as number)
-                  const newIndex = ids.indexOf(over.id as number)
-                  if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return
-                  const newIds = arrayMove(ids, oldIndex, newIndex)
-                  reorderLocations(locationItem.id, newIds)
-                }}
-                modifiers={[restrictToVerticalAxis, restrictToParentElement]}
-              >
-                <SortableContext items={selectedItemBranches.map(b => b.id)} strategy={verticalListSortingStrategy}>
-                  {selectedItemBranches.map((branch) => (
-                    <LocationRow
-                      key={branch.id}
-                      branch={branch}
-                      onToggle={(checked) => handleLocationStatusChange(branch, checked)}
-                      onOpenMap={() => openGoogleMaps(branch.url)}
-                    />
-                  ))}
-                </SortableContext>
-              </DndContext>
+              <div className="space-y-2">
+                {selectedItemBranches.map((branch) => (
+                  <LocationRow
+                    key={branch.id}
+                    branch={branch}
+                    onToggle={(checked) => handleLocationStatusChange(branch, checked)}
+                    onOpenMap={() => openGoogleMaps(branch.url)}
+                  />
+                ))}
+              </div>
             ) : (
               <div className="flex items-center justify-between p-3 border rounded-md">
                 <span className="font-medium">Main</span>
@@ -632,23 +618,11 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
 }
 
 function LocationRow({ branch, onToggle, onOpenMap }: { branch: ItemLocation, onToggle: (checked: boolean) => void, onOpenMap: () => void }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: branch.id })
   return (
     <div
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
       className="flex items-center justify-between p-3 border rounded-md"
-      {...attributes}
     >
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          title="Drag to reorder"
-          className="h-6 w-6 flex items-center justify-center cursor-grab"
-          {...listeners}
-        >
-          <GripVertical className="h-4 w-4" />
-        </button>
         <Checkbox
           checked={branch.status || false}
           onCheckedChange={(checked) => onToggle(checked as boolean)}

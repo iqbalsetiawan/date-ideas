@@ -32,7 +32,6 @@ interface Store {
   addLocation: (location: ItemLocationInsert) => Promise<void>
   updateLocation: (id: number, location: Partial<ItemLocation>) => Promise<void>
   deleteLocation: (id: number) => Promise<void>
-  reorderLocations: (itemId: number, orderedIds: number[]) => Promise<void>
   migrateLegacyLocations: () => Promise<void>
   syncData: () => Promise<void>
 
@@ -407,34 +406,6 @@ export const useStore = create<Store>((set, get) => ({
       set({ locations: locations.filter(loc => loc.id !== id) })
     } catch (error) {
       set({ error: (error as Error).message })
-    }
-  },
-
-  reorderLocations: async (itemId, orderedIds) => {
-    const { locations } = get()
-    const locsForItem = locations.filter(l => l.item_id === itemId)
-    if (orderedIds.length === 0 || locsForItem.length === 0) return
-    const idToLoc = new Map(locsForItem.map(l => [l.id, l]))
-    const orderedSet = new Set(orderedIds)
-    const reorderedSubset = orderedIds.map((id, idx) => ({
-      ...idToLoc.get(id)!,
-      position: idx + 1
-    }))
-    const others = locations.filter(l => l.item_id !== itemId || !orderedSet.has(l.id))
-    const next = [...others, ...reorderedSubset].sort((a, b) => {
-      const byItem = a.item_id - b.item_id
-      if (byItem !== 0) return byItem
-      const apos = a.position || 0
-      const bpos = b.position || 0
-      if (apos !== bpos) return apos - bpos
-      return (a.created_at || '').localeCompare(b.created_at || '')
-    })
-    set({ locations: next })
-    if (!hasValidCredentials) return
-    for (let i = 0; i < orderedIds.length; i++) {
-      const id = orderedIds[i]
-      const pos = i + 1
-      await supabase.from('item_locations').update({ position: pos }).eq('id', id)
     }
   },
 
