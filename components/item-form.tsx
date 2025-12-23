@@ -245,6 +245,7 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
                         size="icon"
                         onClick={() => remove(index)}
                         className="text-destructive"
+                        title="Remove Branch"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

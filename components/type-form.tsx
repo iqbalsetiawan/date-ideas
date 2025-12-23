@@ -184,6 +184,7 @@ export function TypeForm({ open, onOpenChange, types, items }: TypeFormProps) {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEdit(type)}
+                          title="Edit"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -192,6 +193,7 @@ export function TypeForm({ open, onOpenChange, types, items }: TypeFormProps) {
                           size="sm"
                           onClick={() => handleDelete(type.id)}
                           className="text-destructive hover:text-destructive"
+                          title="Delete"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -223,6 +225,7 @@ export function TypeForm({ open, onOpenChange, types, items }: TypeFormProps) {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEdit(type)}
+                          title="Edit"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -231,6 +234,7 @@ export function TypeForm({ open, onOpenChange, types, items }: TypeFormProps) {
                           size="sm"
                           onClick={() => handleDelete(type.id)}
                           className="text-destructive hover:text-destructive"
+                          title="Delete"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

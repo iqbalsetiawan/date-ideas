@@ -246,6 +246,7 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
                   size="sm"
                   onClick={() => openGoogleMaps(primaryUrl)}
                   className="h-6 w-6 p-0"
+                  title="Open in Google Maps"
                 >
                   <MapPin className="h-3 w-3" />
                 </Button>
@@ -285,6 +286,7 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
               size="sm"
               onClick={() => handleEdit(item)}
               className="h-8 w-8 p-0"
+              title="Edit"
             >
               <Edit className="h-4 w-4" />
             </Button>
@@ -293,6 +295,7 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
               size="sm"
               onClick={() => handleDelete(item)}
               className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+              title="Delete"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -396,6 +399,7 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
               size="sm"
               onClick={() => openGoogleMaps(primaryUrl)}
               className="h-8 w-8 p-0"
+              title="Open in Google Maps"
             >
               <MapPin className="h-4 w-4" />
             </Button>
@@ -417,6 +421,7 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
             size="sm"
             onClick={() => handleEdit(item)}
             className="h-8 w-8 p-0"
+            title="Edit"
           >
             <Edit className="h-4 w-4" />
           </Button>
@@ -425,6 +430,7 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
             size="sm"
             onClick={() => handleDelete(item)}
             className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+            title="Delete"
           >
             <Trash2 className="h-4 w-4" />
           </Button>

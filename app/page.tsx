@@ -208,6 +208,7 @@ export default function Home() {
                 variant="outline"
                 size="sm"
                 aria-label="Toggle theme"
+                title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                 onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
                 disabled={loading}
                 className="flex-none"
