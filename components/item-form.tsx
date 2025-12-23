@@ -201,15 +201,17 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <RHFLabel>Locations</RHFLabel>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => append({ label: '', url: '' })}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Branch
-                </Button>
+                {!item && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => append({ label: '', url: '' })}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Branch
+                  </Button>
+                )}
               </div>
               <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
                 {fields.map((field, index) => (
