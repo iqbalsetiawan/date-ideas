@@ -102,9 +102,8 @@ export const useStore = create<Store>((set, get) => ({
       const { data, error } = await supabase
         .from('item_locations')
         .select('*')
-        .order('item_id')
-        .order('position', { ascending: true })
-        .order('created_at', { ascending: true })
+        .order('visited_at', { ascending: false, nullsFirst: true })
+        .order('created_at', { ascending: false })
 
       if (error) throw error
       set({ locations: data || [] })
@@ -361,11 +360,22 @@ export const useStore = create<Store>((set, get) => ({
       if (error) throw error
 
       const { locations } = get()
+      const updatedList = [...locations, data]
       
-      const others = locations.filter(l => l.item_id !== data.item_id)
-      const currentItemLocations = locations.filter(l => l.item_id === data.item_id)
-      const updatedList = [...others, ...currentItemLocations, data]
-      set({ locations: updatedList.sort((a, b) => (a.item_id - b.item_id) || (a.position || 0) - (b.position || 0)) })
+      // Sort by visited_at desc (nulls first), then created_at desc
+      const sortedList = updatedList.sort((a, b) => {
+        // If both have visited_at, sort by date desc
+        if (a.visited_at && b.visited_at) {
+          return new Date(b.visited_at).getTime() - new Date(a.visited_at).getTime()
+        }
+        // If one has visited_at and other doesn't, the one WITHOUT visited_at comes first (nulls first)
+        if (!a.visited_at && b.visited_at) return -1
+        if (a.visited_at && !b.visited_at) return 1
+        // If neither has visited_at, sort by created_at desc
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+      })
+      
+      set({ locations: sortedList })
     } catch (error) {
       set({ error: (error as Error).message })
     }
@@ -384,9 +394,22 @@ export const useStore = create<Store>((set, get) => ({
       if (error) throw error
 
       const { locations } = get()
-      set({
-        locations: locations.map(loc => loc.id === id ? { ...loc, ...data } : loc)
+      const updatedList = locations.map(loc => loc.id === id ? { ...loc, ...data } : loc)
+      
+      // Sort by visited_at desc (nulls first), then created_at desc
+      const sortedList = updatedList.sort((a, b) => {
+        // If both have visited_at, sort by date desc
+        if (a.visited_at && b.visited_at) {
+          return new Date(b.visited_at).getTime() - new Date(a.visited_at).getTime()
+        }
+        // If one has visited_at and other doesn't, the one WITHOUT visited_at comes first (nulls first)
+        if (!a.visited_at && b.visited_at) return -1
+        if (a.visited_at && !b.visited_at) return 1
+        // If neither has visited_at, sort by created_at desc
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
       })
+
+      set({ locations: sortedList })
     } catch (error) {
       set({ error: (error as Error).message })
     }
