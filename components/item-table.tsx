@@ -14,8 +14,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ItemForm } from './item-form'
 import { VisitForm } from './visit-form'
 import { LocationVisitForm } from './location-visit-form'
+import { AddBranchForm } from './add-branch-form'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
-import { MapPin, Edit, Trash2, CheckCircle, GripVertical, ExternalLink } from 'lucide-react'
+import { MapPin, Edit, Trash2, CheckCircle, GripVertical, ExternalLink, PlusCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatDate } from '@/lib/utils'
 import { ItemLocation } from '@/lib/supabase'
@@ -38,6 +39,8 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
   const [showVisitedForm, setShowVisitedForm] = useState(false)
   const [visitedLocation, setVisitedLocation] = useState<ItemLocation | null>(null)
   const [showLocationVisitForm, setShowLocationVisitForm] = useState(false)
+  const [addingBranchItem, setAddingBranchItem] = useState<Item | null>(null)
+  const [showAddBranchForm, setShowAddBranchForm] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [locationItem, setLocationItem] = useState<Item | null>(null)
 
@@ -268,6 +271,18 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => {
+                setAddingBranchItem(item)
+                setShowAddBranchForm(true)
+              }}
+              className="h-8 w-8 p-0"
+              title="Add Branch"
+            >
+              <PlusCircle className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => handleEdit(item)}
               className="h-8 w-8 p-0"
             >
@@ -385,6 +400,18 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
               <MapPin className="h-4 w-4" />
             </Button>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setAddingBranchItem(item)
+              setShowAddBranchForm(true)
+            }}
+            className="h-8 w-8 p-0"
+            title="Add Branch"
+          >
+            <PlusCircle className="h-4 w-4" />
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -581,6 +608,17 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
             if (!open) setVisitedLocation(null)
           }}
           location={visitedLocation}
+        />
+      )}
+
+      {addingBranchItem && (
+        <AddBranchForm
+          open={showAddBranchForm}
+          onOpenChange={(open) => {
+            setShowAddBranchForm(open)
+            if (!open) setAddingBranchItem(null)
+          }}
+          item={addingBranchItem}
         />
       )}
     </>

@@ -34,6 +34,7 @@ interface Store {
   deleteLocation: (id: number) => Promise<void>
   reorderLocations: (itemId: number, orderedIds: number[]) => Promise<void>
   migrateLegacyLocations: () => Promise<void>
+  syncData: () => Promise<void>
 
   addToast: (toast: Omit<Toast, 'id'>) => void
   removeToast: (id: string) => void
@@ -167,10 +168,22 @@ export const useStore = create<Store>((set, get) => ({
 
       if (error) throw error
 
-      const { items, addToast } = get()
+      const { items, locations, updateLocation, addToast } = get()
       set({
         items: items.map(item => item.id === id ? { ...item, ...data } : item)
       })
+
+      // Sync location if single location exists
+      const itemLocations = locations.filter(l => l.item_id === id)
+      if (itemLocations.length === 1) {
+        const loc = itemLocations[0]
+        if (loc.status !== data.status || loc.visited_at !== data.visited_at) {
+          updateLocation(loc.id, {
+            status: data.status,
+            visited_at: data.visited_at
+          })
+        }
+      }
       addToast({
         title: 'Updated!',
         description: `${data.name} has been updated successfully.`,
@@ -342,23 +355,17 @@ export const useStore = create<Store>((set, get) => ({
     try {
       const { data, error } = await supabase
         .from('item_locations')
-        .insert({ ...location, status: false, visited_at: null })
+        .insert({ status: false, visited_at: null, ...location })
         .select()
         .single()
 
       if (error) throw error
 
       const { locations } = get()
-      const { data: resetRows, error: resetError } = await supabase
-        .from('item_locations')
-        .update({ status: false, visited_at: null })
-        .eq('item_id', data.item_id)
-        .select()
-
-      if (resetError) throw resetError
-
+      
       const others = locations.filter(l => l.item_id !== data.item_id)
-      const updatedList = [...others, ...(resetRows || [])]
+      const currentItemLocations = locations.filter(l => l.item_id === data.item_id)
+      const updatedList = [...others, ...currentItemLocations, data]
       set({ locations: updatedList.sort((a, b) => (a.item_id - b.item_id) || (a.position || 0) - (b.position || 0)) })
     } catch (error) {
       set({ error: (error as Error).message })
@@ -449,7 +456,9 @@ export const useStore = create<Store>((set, get) => ({
         await addLocation({
           item_id: item.id,
           label: 'Main',
-          url: item.location
+          url: item.location,
+          status: item.status,
+          visited_at: item.visited_at
         })
         count++
       }
@@ -472,6 +481,39 @@ export const useStore = create<Store>((set, get) => ({
       set({ error: (error as Error).message })
     } finally {
       set({ loading: false })
+    }
+  },
+
+  syncData: async () => {
+    if (!hasValidCredentials) return
+    try {
+      const { items, locations, updateLocation, addToast } = get()
+      let count = 0
+      
+      for (const item of items) {
+        const itemLocs = locations.filter(l => l.item_id === item.id)
+        if (itemLocs.length === 1) {
+          const loc = itemLocs[0]
+          // If item says visited but location says not, sync it.
+          if (item.status && !loc.status) {
+            await updateLocation(loc.id, {
+              status: true,
+              visited_at: item.visited_at
+            })
+            count++
+          }
+        }
+      }
+      
+      if (count > 0) {
+        addToast({
+          title: 'Data Synced',
+          description: `Synced visit status for ${count} items.`,
+          type: 'success'
+        })
+      }
+    } catch (error) {
+      console.error('Sync failed:', error)
     }
   }
 }))

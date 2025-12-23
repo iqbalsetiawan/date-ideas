@@ -29,3 +29,11 @@ export const typeSchema = z.object({
 })
 
 export type TypeFormValues = z.infer<typeof typeSchema>
+
+// Schema for validating branch form data
+export const branchSchema = z.object({
+  label: z.string().min(1, 'Label is required'),
+  url: z.url('Invalid URL'),
+})
+
+export type BranchFormValues = z.infer<typeof branchSchema>

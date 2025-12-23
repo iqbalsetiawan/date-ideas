@@ -19,7 +19,7 @@ const MemoizedItemForm = memo(ItemForm)
 const MemoizedTypeForm = memo(TypeForm)
 
 export default function Home() {
-  const { fetchItems, fetchTypes, fetchLocations, migrateLegacyLocations, items, types, locations, loading, error, toasts, removeToast } = useStore()
+  const { fetchItems, fetchTypes, fetchLocations, migrateLegacyLocations, syncData, items, types, locations, loading, error, toasts, removeToast } = useStore()
   const [showItemForm, setShowItemForm] = useState(false)
   const [showTypeForm, setShowTypeForm] = useState(false)
   const [activeTab, setActiveTab] = useState('food')
@@ -116,6 +116,15 @@ export default function Home() {
     return items.some(item => item.location && !itemIdsWithLocations.has(item.id))
   }, [items, locations, loading, initializing])
 
+  const needsSync = useMemo(() => {
+    if (initializing || loading || items.length === 0) return false
+    return items.some(item => {
+      const locs = locations.filter(l => l.item_id === item.id)
+      if (locs.length !== 1) return false
+      return item.status && !locs[0].status
+    })
+  }, [items, locations, loading, initializing])
+
   const handleShowItemForm = useCallback(() => setShowItemForm(true), [])
   const handleHideItemForm = useCallback(() => setShowItemForm(false), [])
   const handleShowTypeForm = useCallback(() => setShowTypeForm(true), [])
@@ -163,6 +172,17 @@ export default function Home() {
                   className="hidden md:flex bg-amber-100 text-amber-900 hover:bg-amber-200"
                 >
                   Migrate Data
+                </Button>
+              )}
+              {needsSync && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => syncData()}
+                  disabled={loading}
+                  className="hidden md:flex bg-blue-100 text-blue-900 hover:bg-blue-200"
+                >
+                  Sync Status
                 </Button>
               )}
               <Button
