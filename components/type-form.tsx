@@ -113,17 +113,17 @@ export function TypeForm({ open, onOpenChange, types, items }: TypeFormProps) {
             <CardContent>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4 items-start">
                     <FormField
                       control={form.control}
                       name="name"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="relative pb-6">
                           <RHFLabel>Type Name</RHFLabel>
                           <FormControl>
                             <Input placeholder="Enter type name" {...field} />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="absolute bottom-0" />
                         </FormItem>
                       )}
                     />
@@ -131,7 +131,7 @@ export function TypeForm({ open, onOpenChange, types, items }: TypeFormProps) {
                       control={form.control}
                       name="category"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="relative pb-6">
                           <RHFLabel>Category</RHFLabel>
                           <Select value={field.value} onValueChange={field.onChange}>
                             <FormControl>
@@ -144,7 +144,7 @@ export function TypeForm({ open, onOpenChange, types, items }: TypeFormProps) {
                               <SelectItem value="place">Place</SelectItem>
                             </SelectContent>
                           </Select>
-                          <FormMessage />
+                          <FormMessage className="absolute bottom-0" />
                         </FormItem>
                       )}
                     />
