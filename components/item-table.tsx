@@ -3,10 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '@/lib/store'
 import { Item, Type } from '@/lib/supabase'
-import { DndContext, type DragEndEvent } from '@dnd-kit/core'
-import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { restrictToVerticalAxis, restrictToParentElement } from '@dnd-kit/modifiers'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -16,21 +12,25 @@ import { VisitForm } from './visit-form'
 import { LocationVisitForm } from './location-visit-form'
 import { AddBranchForm } from './add-branch-form'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
-import { MapPin, Edit, Trash2, CheckCircle, GripVertical, ExternalLink, PlusCircle } from 'lucide-react'
+import { MapPin, Edit, Trash2, CheckCircle, ExternalLink, PlusCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatDate } from '@/lib/utils'
 import { ItemLocation } from '@/lib/supabase'
+
+function primaryBranchLabel(branches: ItemLocation[]): string {
+  if (branches.length === 0) return ''
+  return (branches[0].label ?? '').trim()
+}
 
 interface ItemTableProps {
   items: Item[]
   types: Type[]
   category: 'food' | 'place'
   loading: boolean
-  allowDrag?: boolean
 }
 
-export function ItemTable({ items, types, category, loading, allowDrag = true }: ItemTableProps) {
-  const { updateItem, deleteItem, reorderItems, locations, updateLocation } = useStore()
+export function ItemTable({ items, types, category, loading }: ItemTableProps) {
+  const { updateItem, deleteItem, locations, updateLocation } = useStore()
   const [editingItem, setEditingItem] = useState<Item | null>(null)
   const [showEditForm, setShowEditForm] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<Item | null>(null)
@@ -109,7 +109,9 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
   }
 
   const openGoogleMaps = (url: string) => {
-    window.open(url, '_blank')
+    const u = url.trim()
+    if (!u) return
+    window.open(u, '_blank')
   }
 
   if (loading && items.length === 0) {
@@ -133,20 +135,10 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
     )
   }
 
-  const onDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-    const ids = items.map(i => i.id)
-    const oldIndex = ids.indexOf(active.id as number)
-    const newIndex = ids.indexOf(over.id as number)
-    const newIds = arrayMove(ids, oldIndex, newIndex)
-    reorderItems(newIds)
-  }
-
   const Row = ({ item }: { item: Item }) => {
-    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id, disabled: !allowDrag })
     const itemBranches = locations.filter(l => l.item_id === item.id)
-    const primaryUrl = itemBranches[0]?.url || item.location
+    const primaryUrl = (itemBranches[0]?.url || item.location || '').trim()
+    const hasMapLink = primaryUrl.length > 0
     const hasMultipleBranches = itemBranches.length > 1
 
     // Check if all branches are visited
@@ -179,25 +171,10 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
         : visitedCount > 0
           ? 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-700/10'
           : 'bg-neutral-100 text-neutral-700 ring-1 ring-inset ring-neutral-700/10'
+    const locLabel = primaryBranchLabel(itemBranches)
 
     return (
-      <TableRow
-        ref={setNodeRef}
-        style={{ transform: CSS.Transform.toString(transform), transition }}
-        key={item.id}
-        {...attributes}
-      >
-        <TableCell className="w-10">
-          <Button
-            type="button"
-            variant="ghost"
-            title={allowDrag ? "Drag to reorder" : "Switch to Custom sort to reorder"}
-            className={cn("h-8 w-8 flex items-center justify-center p-0", allowDrag ? "cursor-grab" : "cursor-not-allowed opacity-40")}
-            {...(allowDrag ? listeners : {})}
-          >
-            <GripVertical className="h-4 w-4" />
-          </Button>
-        </TableCell>
+      <TableRow key={item.id}>
         <TableCell className="text-center p-0">
           <div className="flex items-center justify-center">
             {
@@ -240,19 +217,34 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
               </Button>
             ) : (
               <>
-                <span className={cn('truncate max-w-[140px] md:max-w-[200px]', isCompleted ? 'opacity-60' : '')}>{primaryUrl}</span>
+                <span className={cn('truncate max-w-[140px] md:max-w-[200px]', isCompleted ? 'opacity-60' : '', !hasMapLink && 'text-muted-foreground')}>
+                  {hasMapLink ? primaryUrl : '—'}
+                </span>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => openGoogleMaps(primaryUrl)}
+                  disabled={!hasMapLink}
                   className="h-6 w-6 p-0"
-                  title="Open in Google Maps"
+                  title={hasMapLink ? 'Open in Google Maps' : 'No map link'}
                 >
                   <MapPin className="h-3 w-3" />
                 </Button>
               </>
             )}
           </div>
+        </TableCell>
+        <TableCell className="hidden md:table-cell max-w-[9rem]">
+          <span
+            className={cn(
+              'block truncate text-sm',
+              !locLabel && 'text-muted-foreground',
+              isCompleted && 'opacity-60'
+            )}
+            title={locLabel || undefined}
+          >
+            {locLabel || '—'}
+          </span>
         </TableCell>
         <TableCell className="hidden md:table-cell text-center">
           <span className={cn('inline-flex items-center rounded-full px-2 py-1 text-xs font-medium', progressBadgeClasses)}>
@@ -306,9 +298,9 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
   }
 
   const MobileRow = ({ item }: { item: Item }) => {
-    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id, disabled: !allowDrag })
     const itemBranches = locations.filter(l => l.item_id === item.id)
-    const primaryUrl = itemBranches[0]?.url || item.location
+    const primaryUrl = (itemBranches[0]?.url || item.location || '').trim()
+    const hasMapLink = primaryUrl.length > 0
     const hasMultipleBranches = itemBranches.length > 1
 
     // Check if all branches are visited
@@ -334,31 +326,23 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
         : visitedCount > 0
           ? 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-700/10'
           : 'bg-neutral-100 text-neutral-700 ring-1 ring-inset ring-neutral-700/10'
+    const locLabel = primaryBranchLabel(itemBranches)
 
     return (
       <div
-        ref={setNodeRef}
-        style={{ transform: CSS.Transform.toString(transform), transition }}
         key={item.id}
-        {...attributes}
         className="rounded-md border p-3 bg-background"
       >
         <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            title={allowDrag ? "Drag to reorder" : "Switch to Custom sort to reorder"}
-            className={cn("h-8 w-8 flex items-center justify-center shrink-0 p-0", allowDrag ? "cursor-grab" : "cursor-not-allowed opacity-40")}
-            {...(allowDrag ? listeners : {})}
-          >
-            <GripVertical className="h-4 w-4" />
-          </Button>
-          <div className={cn('font-medium flex-1', isCompleted ? 'line-through opacity-60' : '')}>
+          <div className={cn('font-medium flex-1 min-w-0', isCompleted ? 'line-through opacity-60' : '')}>
             {item.name}
           </div>
-          <span className={cn('inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10', isCompleted ? 'opacity-60' : '')}>
+          <span className={cn('inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 shrink-0', isCompleted ? 'opacity-60' : '')}>
             {getTypeName(item.type_id)}
           </span>
+        </div>
+        <div className="mt-1 text-xs text-muted-foreground truncate" title={locLabel || undefined}>
+          {locLabel ? <span>Area: {locLabel}</span> : <span>Area: —</span>}
         </div>
         <div className="mt-2 flex items-center justify-evenly gap-2">
           <div className="flex items-center gap-2">
@@ -398,8 +382,9 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
               variant="ghost"
               size="sm"
               onClick={() => openGoogleMaps(primaryUrl)}
+              disabled={!hasMapLink}
               className="h-8 w-8 p-0"
-              title="Open in Google Maps"
+              title={hasMapLink ? 'Open in Google Maps' : 'No map link'}
             >
               <MapPin className="h-4 w-4" />
             </Button>
@@ -445,78 +430,36 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
 
   return (
     <>
-      {allowDrag ? (
-        <DndContext onDragEnd={onDragEnd} modifiers={[restrictToVerticalAxis, restrictToParentElement]}>
-          {!isMobile && (
-            <div className="rounded-md border overflow-x-auto md:overflow-visible">
-              <Table>
-                <TableHeader>
-                  <TableRow className="sticky top-0 z-10 bg-background hover:bg-background">
-                    <TableHead className="w-10"></TableHead>
-                    <TableHead className="w-[50px] text-center">Complete</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead className="hidden md:table-cell text-center">Type</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead className="hidden md:table-cell text-center">Progress</TableHead>
-                    <TableHead className="hidden md:table-cell text-center">Visited</TableHead>
-                    <TableHead className="hidden md:table-cell text-center">Date</TableHead>
-                    <TableHead className="w-[120px] text-center">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
-                  <TableBody>
-                    {items.map((item) => (
-                      <Row key={item.id} item={item} />
-                    ))}
-                  </TableBody>
-                </SortableContext>
-              </Table>
-            </div>
-          )}
-          {isMobile && (
-            <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-2">
-                {items.map((item) => (
-                  <MobileRow key={item.id} item={item} />
-                ))}
-              </div>
-            </SortableContext>
-          )}
-        </DndContext>
-      ) : (
-        <>
-          {!isMobile && (
-            <div className="rounded-md border overflow-x-auto md:overflow-visible">
-              <Table>
-                <TableHeader>
-                  <TableRow className="sticky top-0 z-10 bg-background hover:bg-background">
-                    <TableHead className="w-10"></TableHead>
-                    <TableHead className="w-[50px] text-center">Complete</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead className="hidden md:table-cell text-center">Type</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead className="hidden md:table-cell text-center">Progress</TableHead>
-                    <TableHead className="hidden md:table-cell text-center">Visited</TableHead>
-                    <TableHead className="hidden md:table-cell text-center">Date</TableHead>
-                    <TableHead className="w-[120px] text-center">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((item) => (
-                    <Row key={item.id} item={item} />
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-          {isMobile && (
-            <div className="space-y-2">
+      {!isMobile && (
+        <div className="rounded-md border overflow-x-auto md:overflow-visible">
+          <Table>
+            <TableHeader>
+              <TableRow className="sticky top-0 z-20 border-b bg-background shadow-sm transition-none hover:bg-background">
+                <TableHead className="w-[50px] text-center" aria-label="Complete" />
+                <TableHead>Name</TableHead>
+                <TableHead className="hidden md:table-cell text-center">Type</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead className="hidden md:table-cell max-w-[9rem]" aria-label="Area" />
+                <TableHead className="hidden md:table-cell text-center">Progress</TableHead>
+                <TableHead className="hidden md:table-cell text-center">Visited</TableHead>
+                <TableHead className="hidden md:table-cell text-center">Date</TableHead>
+                <TableHead className="w-[120px] text-center">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {items.map((item) => (
-                <MobileRow key={item.id} item={item} />
+                <Row key={item.id} item={item} />
               ))}
-            </div>
-          )}
-        </>
+            </TableBody>
+          </Table>
+        </div>
+      )}
+      {isMobile && (
+        <div className="space-y-2">
+          {items.map((item) => (
+            <MobileRow key={item.id} item={item} />
+          ))}
+        </div>
       )}
 
       <ItemForm
@@ -572,6 +515,7 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
                     branch={branch}
                     onToggle={(checked) => handleLocationStatusChange(branch, checked)}
                     onOpenMap={() => openGoogleMaps(branch.url)}
+                    canOpenMap={!!branch.url?.trim()}
                   />
                 ))}
               </div>
@@ -581,6 +525,7 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
                 <Button
                   variant="outline"
                   size="sm"
+                  disabled={!locationItem?.location?.trim()}
                   onClick={() => locationItem && openGoogleMaps(locationItem.location)}
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
@@ -617,7 +562,7 @@ export function ItemTable({ items, types, category, loading, allowDrag = true }:
   )
 }
 
-function LocationRow({ branch, onToggle, onOpenMap }: { branch: ItemLocation, onToggle: (checked: boolean) => void, onOpenMap: () => void }) {
+function LocationRow({ branch, onToggle, onOpenMap, canOpenMap }: { branch: ItemLocation, onToggle: (checked: boolean) => void, onOpenMap: () => void, canOpenMap: boolean }) {
   return (
     <div
       className="flex items-center justify-between p-3 border rounded-md"
@@ -628,7 +573,7 @@ function LocationRow({ branch, onToggle, onOpenMap }: { branch: ItemLocation, on
           onCheckedChange={(checked) => onToggle(checked as boolean)}
         />
         <div className="flex flex-col">
-          <span className={cn('font-medium', branch.status && 'line-through opacity-60')}>{branch.label}</span>
+          <span className={cn('font-medium', branch.status && 'line-through opacity-60')}>{branch.label || '—'}</span>
           {branch.status && branch.visited_at && (
             <span className="text-xs text-muted-foreground">Visited: {formatDate(branch.visited_at)}</span>
           )}
@@ -638,6 +583,7 @@ function LocationRow({ branch, onToggle, onOpenMap }: { branch: ItemLocation, on
         variant="outline"
         size="sm"
         onClick={onOpenMap}
+        disabled={!canOpenMap}
       >
         <ExternalLink className="h-4 w-4 mr-2" />
         Open Map

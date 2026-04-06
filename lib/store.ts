@@ -21,7 +21,6 @@ interface Store {
   addItem: (item: ItemInsert) => Promise<Item | null>
   updateItem: (id: number, item: Partial<Item>) => Promise<void>
   deleteItem: (id: number) => Promise<void>
-  reorderItems: (orderedIds: number[]) => Promise<void>
 
   fetchTypes: () => Promise<void>
   fetchLocations: () => Promise<void>
@@ -197,27 +196,6 @@ export const useStore = create<Store>((set, get) => ({
       })
     } finally {
       set({ loading: false })
-    }
-  },
-
-  reorderItems: async (orderedIds) => {
-    const { items } = get()
-    const idToItem = new Map(items.map(i => [i.id, i]))
-    if (orderedIds.length === 0) return
-    const affectedCategory = idToItem.get(orderedIds[0])!.category
-    const orderedSet = new Set(orderedIds)
-    const reorderedSubset = orderedIds.map((id, idx) => ({
-      ...idToItem.get(id)!,
-      position: idx + 1
-    }))
-    const others = items.filter(i => i.category !== affectedCategory || !orderedSet.has(i.id))
-    set({ items: [...others, ...reorderedSubset] })
-
-    if (!hasValidCredentials) return
-    for (let i = 0; i < orderedIds.length; i++) {
-      const id = orderedIds[i]
-      const pos = i + 1
-      await supabase.from('items').update({ position: pos }).eq('id', id)
     }
   },
 

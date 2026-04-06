@@ -10,6 +10,8 @@ import { branchSchema, type BranchFormValues } from '@/lib/validation'
 import { useStore } from '@/lib/store'
 import { Item } from '@/lib/supabase'
 import { useResetOnOpen } from '@/lib/forms'
+import { getSortedLocationLabels } from '@/lib/location-label-suggestions'
+import { LabelSuggestInput } from '@/components/label-suggest-input'
 import { useMemo } from 'react'
 
 interface AddBranchFormProps {
@@ -19,7 +21,7 @@ interface AddBranchFormProps {
 }
 
 export function AddBranchForm({ open, onOpenChange, item }: AddBranchFormProps) {
-  const { addLocation, loading } = useStore()
+  const { addLocation, loading, locations } = useStore()
   const form = useForm<BranchFormValues>({
     resolver: zodResolver(branchSchema),
     defaultValues: { label: '', url: '' },
@@ -33,12 +35,17 @@ export function AddBranchForm({ open, onOpenChange, item }: AddBranchFormProps) 
   
   useResetOnOpen(form, open, resetValues)
 
+  const sortedLocationLabels = useMemo(
+    () => getSortedLocationLabels(locations),
+    [locations]
+  )
+
   const onSubmit = async (values: BranchFormValues) => {
     try {
       await addLocation({
         item_id: item.id,
-        label: values.label,
-        url: values.url,
+        label: values.label.trim(),
+        url: values.url.trim(),
       })
       onOpenChange(false)
     } catch (error) {
@@ -48,23 +55,32 @@ export function AddBranchForm({ open, onOpenChange, item }: AddBranchFormProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[425px] gap-3 p-4 sm:p-5 overflow-visible">
+        <DialogHeader className="space-y-1">
           <DialogTitle>Add Branch</DialogTitle>
-          <DialogDescription>
-            Add a new location branch for {item.name}.
+          <DialogDescription className="text-xs leading-snug">
+            For {item.name}.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
             <FormField
               control={form.control}
               name="label"
               render={({ field }) => (
                 <FormItem>
-                  <RHFLabel>Label</RHFLabel>
+                  <RHFLabel className="text-sm">Area (optional)</RHFLabel>
                   <FormControl>
-                    <Input placeholder="e.g. Branch Name or Area" {...field} />
+                    <LabelSuggestInput
+                      placeholder="Search or pick an area (e.g. Blok M)"
+                      autoComplete="off"
+                      suggestions={sortedLocationLabels}
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -75,7 +91,7 @@ export function AddBranchForm({ open, onOpenChange, item }: AddBranchFormProps) 
               name="url"
               render={({ field }) => (
                 <FormItem>
-                  <RHFLabel>Google Maps URL</RHFLabel>
+                  <RHFLabel>Google Maps URL (optional)</RHFLabel>
                   <FormControl>
                     <Input placeholder="https://maps.google.com/..." {...field} />
                   </FormControl>
@@ -83,11 +99,11 @@ export function AddBranchForm({ open, onOpenChange, item }: AddBranchFormProps) 
                 </FormItem>
               )}
             />
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <DialogFooter className="gap-2 pt-1">
+              <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
+              <Button type="submit" size="sm" disabled={loading}>
                 {loading ? 'Adding...' : 'Add Branch'}
               </Button>
             </DialogFooter>

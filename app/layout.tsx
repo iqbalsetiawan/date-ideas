@@ -74,10 +74,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "white" },
-    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
-  ],
+  themeColor: "white",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -97,11 +94,6 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
         <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
         <meta httpEquiv="Referrer-Policy" content="origin-when-cross-origin" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(() => { try { const pref = localStorage.getItem('theme'); const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches; const isDark = pref ? pref === 'dark' : systemDark; const root = document.documentElement; root.classList[isDark ? 'add' : 'remove']('dark'); } catch (_) {} })();`,
-          }}
-        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

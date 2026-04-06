@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
+import { getSortedLocationLabels } from '@/lib/location-label-suggestions'
+import { LabelSuggestInput } from '@/components/label-suggest-input'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Form, FormField, FormItem, FormLabel as RHFLabel, FormControl, FormMessage } from '@/components/ui/form'
@@ -44,7 +46,13 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
     name: "locations"
   });
 
-  const multipleLocations = (form.watch('locations') || []).length > 1
+  const watchedLocations = form.watch('locations') || []
+  const multipleLocations = watchedLocations.length > 1
+
+  const sortedLocationLabels = useMemo(
+    () => getSortedLocationLabels(locations),
+    [locations]
+  )
 
   const resetValues = useMemo<ItemFormValues>(() => {
     if (!item) {
@@ -74,7 +82,12 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
   useResetOnOpen(form, open, resetValues)
 
   const onSubmit = async (values: ItemFormValues) => {
-    const primaryLocation = values.locations[0].url;
+    const normalizedLocs = values.locations.map((l) => ({
+      id: l.id,
+      label: (l.label ?? '').trim(),
+      url: (l.url ?? '').trim(),
+    }))
+    const primaryLocation = normalizedLocs[0]?.url ?? ''
     const isMulti = values.locations.length > 1
 
     try {
@@ -92,22 +105,22 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
         const currentLocations = locations.filter(l => l.item_id === item.id);
         
         // Identify deletions
-        const formLocationIds = values.locations.map(l => l.id).filter(Boolean);
+        const formLocationIds = normalizedLocs.map(l => l.id).filter(Boolean) as number[];
         const toDelete = currentLocations.filter(l => !formLocationIds.includes(l.id));
         for (const loc of toDelete) {
           await deleteLocation(loc.id);
         }
 
         // Identify updates and additions
-        for (const loc of values.locations) {
+        for (const loc of normalizedLocs) {
           if (loc.id) {
             // Update
             const existing = currentLocations.find(l => l.id === loc.id);
             if (existing && (existing.label !== loc.label || existing.url !== loc.url)) {
               await updateLocation(loc.id, { label: loc.label, url: loc.url });
             }
-          } else {
-            // Add
+          } else if (loc.url) {
+            // Add — only persist rows with a URL (avoids empty duplicate branches)
             await addLocation({
               item_id: item.id,
               label: loc.label,
@@ -129,14 +142,15 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
         });
 
         if (newItem) {
-          // Add locations for new item
-          for (const loc of values.locations) {
-            await addLocation({
-              item_id: newItem.id,
-              label: loc.label,
-              url: loc.url,
-              status: false
-            });
+          for (const loc of normalizedLocs) {
+            if (loc.url) {
+              await addLocation({
+                item_id: newItem.id,
+                label: loc.label,
+                url: loc.url,
+                status: false
+              });
+            }
           }
         }
       }
@@ -148,17 +162,17 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[550px] gap-3 p-4 sm:p-5 overflow-visible">
+        <DialogHeader className="space-y-1">
           <DialogTitle>
             {item ? 'Edit' : 'Add New'} {category === 'food' ? 'Food' : 'Place'}
           </DialogTitle>
-          <DialogDescription>
-            Fill in name, type, and branches. Add multiple branches if needed. Visit tracking is disabled when multiple branches are present.
+          <DialogDescription className="text-xs leading-snug">
+            {item ? 'Update the details for this entry.' : 'Fill in the details to add it to your list.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
             <FormField
               control={form.control}
               name="name"
@@ -198,14 +212,15 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
               )}
             />
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <RHFLabel>Locations</RHFLabel>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <RHFLabel className="text-sm">Locations (optional)</RHFLabel>
                 {!item && (
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
+                    className="h-8 shrink-0"
                     onClick={() => append({ label: '', url: '' })}
                   >
                     <Plus className="h-4 w-4 mr-1" />
@@ -213,16 +228,25 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
                   </Button>
                 )}
               </div>
-              <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
+              <div className="space-y-1.5 pr-1">
                 {fields.map((field, index) => (
                   <div key={field.id} className="flex gap-2 items-start">
                     <FormField
                       control={form.control}
                       name={`locations.${index}.label`}
                       render={({ field }) => (
-                        <FormItem className="flex-1">
+                        <FormItem className="flex-1 min-w-0">
                           <FormControl>
-                            <Input placeholder="e.g. Blok M" {...field} />
+                            <LabelSuggestInput
+                              placeholder="Search or pick an area (e.g. Blok M)"
+                              autoComplete="off"
+                              suggestions={sortedLocationLabels}
+                              value={field.value ?? ''}
+                              onChange={field.onChange}
+                              onBlur={field.onBlur}
+                              name={field.name}
+                              ref={field.ref}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -232,9 +256,9 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
                       control={form.control}
                       name={`locations.${index}.url`}
                       render={({ field }) => (
-                        <FormItem className="flex-[2]">
+                        <FormItem className="flex-[2] min-w-0">
                           <FormControl>
-                            <Input placeholder="Google Maps URL" {...field} />
+                            <Input placeholder="Google Maps URL (optional)" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -245,8 +269,8 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
                         type="button"
                         variant="ghost"
                         size="icon"
+                        className="shrink-0 text-destructive hover:text-destructive"
                         onClick={() => remove(index)}
-                        className="text-destructive"
                         title="Remove Branch"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -295,11 +319,11 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
               </>
             )}
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <DialogFooter className="gap-2 sm:gap-2 pt-1">
+              <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
+              <Button type="submit" size="sm" disabled={loading}>
                 {loading ? 'Saving...' : item ? 'Update' : 'Add'}
               </Button>
             </DialogFooter>
