@@ -2,8 +2,22 @@
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
-import { Form, FormField, FormItem, FormLabel as RHFLabel, FormControl, FormMessage } from '@/components/ui/form'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel as RHFLabel,
+  FormControl,
+  FormMessage,
+} from '@/components/ui/form'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { visitSchema, type VisitFormValues } from '@/lib/validation'
@@ -26,9 +40,14 @@ export function LocationVisitForm({ open, onOpenChange, location }: LocationVisi
     mode: 'onSubmit',
   })
 
-  const resetValues = useMemo<VisitFormValues>(() => ({
-    visited_at: location.visited_at ? new Date(location.visited_at).toISOString().split('T')[0] : '',
-  }), [location])
+  const resetValues = useMemo<VisitFormValues>(
+    () => ({
+      visited_at: location.visited_at
+        ? new Date(location.visited_at).toISOString().split('T')[0]
+        : '',
+    }),
+    [location]
+  )
   useResetOnOpen(form, open, resetValues)
 
   const onSubmit = async (values: VisitFormValues) => {

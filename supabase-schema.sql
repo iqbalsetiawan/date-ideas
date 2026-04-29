@@ -3,7 +3,9 @@ CREATE TABLE IF NOT EXISTS types (
   id BIGSERIAL PRIMARY KEY,
   name TEXT NOT NULL,
   category TEXT NOT NULL CHECK (category IN ('food', 'place')),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  color TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE (name, category)
 );
 
 -- Create items table
@@ -12,9 +14,9 @@ CREATE TABLE IF NOT EXISTS items (
   name TEXT NOT NULL,
   type_id BIGINT NOT NULL REFERENCES types(id) ON DELETE CASCADE,
   location TEXT NOT NULL,
+  notes TEXT,
   status BOOLEAN DEFAULT FALSE,
   visited_at DATE,
-  position BIGINT,
   category TEXT NOT NULL CHECK (category IN ('food', 'place')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -27,7 +29,6 @@ CREATE TABLE IF NOT EXISTS item_locations (
   url TEXT NOT NULL,
   status BOOLEAN DEFAULT FALSE,
   visited_at DATE,
-  position BIGINT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -35,7 +36,6 @@ CREATE TABLE IF NOT EXISTS item_locations (
 CREATE INDEX IF NOT EXISTS idx_items_category ON items(category);
 CREATE INDEX IF NOT EXISTS idx_items_type_id ON items(type_id);
 CREATE INDEX IF NOT EXISTS idx_items_status ON items(status);
-CREATE INDEX IF NOT EXISTS idx_items_position ON items(position);
 CREATE INDEX IF NOT EXISTS idx_types_category ON types(category);
 
 -- Enable Row Level Security (RLS)
@@ -47,6 +47,10 @@ ALTER TABLE item_locations ENABLE ROW LEVEL SECURITY;
 -- For development purposes, allowing all operations
 -- In production, you might want to add authentication
 
+DROP POLICY IF EXISTS "Allow all operations on types" ON types;
+DROP POLICY IF EXISTS "Allow all operations on items" ON items;
+DROP POLICY IF EXISTS "Allow all operations on item_locations" ON item_locations;
+
 CREATE POLICY "Allow all operations on types" ON types
   FOR ALL USING (true) WITH CHECK (true);
 
@@ -56,7 +60,11 @@ CREATE POLICY "Allow all operations on items" ON items
 CREATE POLICY "Allow all operations on item_locations" ON item_locations
   FOR ALL USING (true) WITH CHECK (true);
 
--- Insert some sample data
+-- ============================================================
+-- SAMPLE DATA (optional — delete this section for a clean start)
+-- ============================================================
+
+-- Insert some sample types
 INSERT INTO types (name, category) VALUES
   ('Restaurant', 'food'),
   ('Cafe', 'food'),
@@ -66,15 +74,14 @@ INSERT INTO types (name, category) VALUES
   ('Park', 'place'),
   ('Shopping Mall', 'place'),
   ('Beach', 'place')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (name, category) DO NOTHING;
 
 -- Insert some sample items
 INSERT INTO items (name, type_id, location, status, category) VALUES
-  ('Warung Padang Sederhana', 1, 'https://maps.app.goo.gl/uiA8uuGXLvu4mD428', false, 'food'),
-  ('Kopi Kenangan', 2, 'https://maps.app.goo.gl/sEckWHzDDizBdrW46', true, 'food'),
-  ('Street Food Delight', 3, 'https://maps.app.goo.gl/3h3h3h3h3h3h3h3h', false, 'food'),
-  ('Bakery Bliss', 4, 'https://maps.app.goo.gl/4h4h4h4h4h4h4h4h', true, 'food'),
-  ('Museum Nasional', 5, 'https://maps.app.goo.gl/jqh3x7YWjec5GyVa6', false, 'place'),
-  ('Taman Mini Indonesia Indah', 6, 'https://maps.app.goo.gl/YL5jRb74TJ7JxqBK6', true, 'place'),
-  ('Beachfront Paradise', 7, 'https://maps.app.goo.gl/7h7h7h7h7h7h7h7h', false, 'place')
-ON CONFLICT DO NOTHING;
+  ('Warung Padang Sederhana', (SELECT id FROM types WHERE name = 'Restaurant' AND category = 'food'), 'https://maps.app.goo.gl/uiA8uuGXLvu4mD428', false, 'food'),
+  ('Kopi Kenangan',           (SELECT id FROM types WHERE name = 'Cafe'        AND category = 'food'), 'https://maps.app.goo.gl/sEckWHzDDizBdrW46', false, 'food'),
+  ('Street Food Delight',     (SELECT id FROM types WHERE name = 'Street Food' AND category = 'food'), 'https://maps.app.goo.gl/3h3h3h3h3h3h3h3h', false, 'food'),
+  ('Bakery Bliss',            (SELECT id FROM types WHERE name = 'Bakery'      AND category = 'food'), 'https://maps.app.goo.gl/4h4h4h4h4h4h4h4h', false, 'food'),
+  ('Museum Nasional',         (SELECT id FROM types WHERE name = 'Museum'       AND category = 'place'), 'https://maps.app.goo.gl/jqh3x7YWjec5GyVa6', false, 'place'),
+  ('Taman Mini Indonesia Indah', (SELECT id FROM types WHERE name = 'Park'     AND category = 'place'), 'https://maps.app.goo.gl/YL5jRb74TJ7JxqBK6', false, 'place'),
+  ('Beachfront Paradise',     (SELECT id FROM types WHERE name = 'Beach'        AND category = 'place'), 'https://maps.app.goo.gl/7h7h7h7h7h7h7h7h', false, 'place');

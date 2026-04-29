@@ -49,18 +49,12 @@ export function ConfirmationDialog({
             )}
             <div>
               <DialogTitle>{title}</DialogTitle>
-              <DialogDescription className="mt-1">
-                {description}
-              </DialogDescription>
+              <DialogDescription className="mt-1">{description}</DialogDescription>
             </div>
           </div>
         </DialogHeader>
         <DialogFooter className="gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             {cancelText}
           </Button>
           <Button

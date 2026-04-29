@@ -19,11 +19,16 @@ export const optionalMapsUrlSchema = z.string().refine(
 export const itemSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   type_id: z.string().min(1, 'Type is required'),
-  locations: z.array(z.object({
-    id: z.number().optional(),
-    label: z.string(),
-    url: optionalMapsUrlSchema,
-  })).min(1, 'At least one location is required'),
+  notes: z.string().optional(),
+  locations: z
+    .array(
+      z.object({
+        id: z.number().optional(),
+        label: z.string(),
+        url: optionalMapsUrlSchema,
+      })
+    )
+    .min(1, 'At least one location is required'),
   status: z.boolean(),
   visited_at: z.string().optional().or(z.literal('')),
 })
@@ -37,10 +42,18 @@ export const visitSchema = z.object({
 
 export type VisitFormValues = z.infer<typeof visitSchema>
 
+export const DEFAULT_TYPE_COLOR = '#3b82f6'
+
+export function normalizeTypeColor(value: string | null | undefined): string {
+  const t = value?.trim()
+  return t && /^#[0-9A-Fa-f]{6}$/i.test(t) ? t : DEFAULT_TYPE_COLOR
+}
+
 // Schema for validating type (category) form data
 export const typeSchema = z.object({
   name: z.string().min(1, 'Type name is required'),
   category: z.enum(['food', 'place'], { error: 'Category is required' }),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Pick a valid color'),
 })
 
 export type TypeFormValues = z.infer<typeof typeSchema>

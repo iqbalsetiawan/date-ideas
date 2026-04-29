@@ -6,8 +6,10 @@ import { cn } from '@/lib/utils'
 import { filterLabelSuggestions } from '@/lib/location-label-suggestions'
 import { ChevronDown } from 'lucide-react'
 
-export interface LabelSuggestInputProps
-  extends Omit<React.ComponentProps<'input'>, 'value' | 'onChange' | 'list'> {
+export interface LabelSuggestInputProps extends Omit<
+  React.ComponentProps<'input'>,
+  'value' | 'onChange' | 'list'
+> {
   value: string
   onChange: (value: string) => void
   suggestions: string[]
@@ -24,10 +26,7 @@ export const LabelSuggestInput = forwardRef<HTMLInputElement, LabelSuggestInputP
     const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const containerRef = useRef<HTMLDivElement>(null)
 
-    const filtered = useMemo(
-      () => filterLabelSuggestions(suggestions, value),
-      [suggestions, value]
-    )
+    const filtered = useMemo(() => filterLabelSuggestions(suggestions, value), [suggestions, value])
 
     const clearBlurTimer = useCallback(() => {
       if (blurTimer.current) {
@@ -90,7 +89,11 @@ export const LabelSuggestInput = forwardRef<HTMLInputElement, LabelSuggestInputP
                 setHighlight(-1)
                 return
               }
-              if (!showPanel && (e.key === 'ArrowDown' || e.key === 'ArrowUp') && filtered.length > 0) {
+              if (
+                !showPanel &&
+                (e.key === 'ArrowDown' || e.key === 'ArrowUp') &&
+                filtered.length > 0
+              ) {
                 e.preventDefault()
                 setOpen(true)
                 setHighlight(e.key === 'ArrowDown' ? 0 : filtered.length - 1)

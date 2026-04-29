@@ -1,5 +1,14 @@
 import { create } from 'zustand'
-import { supabase, Item, Type, ItemInsert, TypeInsert, ItemLocation, ItemLocationInsert, hasValidCredentials } from './supabase'
+import {
+  supabase,
+  Item,
+  Type,
+  ItemInsert,
+  TypeInsert,
+  ItemLocation,
+  ItemLocationInsert,
+  hasValidCredentials,
+} from './supabase'
 
 interface Toast {
   id: string
@@ -55,13 +64,13 @@ export const useStore = create<Store>((set, get) => ({
   addToast: (toast) => {
     const id = Math.random().toString(36).substring(2, 9)
     set((state) => ({
-      toasts: [...state.toasts, { ...toast, id }]
+      toasts: [...state.toasts, { ...toast, id }],
     }))
   },
 
   removeToast: (id) => {
     set((state) => ({
-      toasts: state.toasts.filter(toast => toast.id !== id)
+      toasts: state.toasts.filter((toast) => toast.id !== id),
     }))
   },
 
@@ -70,7 +79,7 @@ export const useStore = create<Store>((set, get) => ({
       set({
         items: [],
         loading: false,
-        error: 'Please configure your Supabase credentials in .env.local'
+        error: 'Please configure your Supabase credentials in .env.local',
       })
       return
     }
@@ -79,11 +88,12 @@ export const useStore = create<Store>((set, get) => ({
       set({ loading: true, error: null })
       const { data, error } = await supabase
         .from('items')
-        .select(`
+        .select(
+          `
           *,
           types!inner(id, name, category)
-        `)
-        .order('position', { ascending: true })
+        `
+        )
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -119,33 +129,25 @@ export const useStore = create<Store>((set, get) => ({
 
     try {
       set({ loading: true, error: null })
-      const { data, error } = await supabase
-        .from('items')
-        .insert(item)
-        .select()
-        .single()
+      const { data, error } = await supabase.from('items').insert(item).select().single()
 
       if (error) throw error
 
       const { items, addToast } = get()
-      const minPos = items.length > 0 ? Math.min(...items.map(i => i.position || 0)) : 1
-      const newPos = minPos - 1
-      await supabase.from('items').update({ position: newPos }).eq('id', data.id)
-      const updated = { ...data, position: newPos }
-      set({ items: [updated, ...items] })
+      set({ items: [data, ...items] })
       addToast({
         title: 'Success!',
         description: `${data.name} has been added successfully.`,
-        type: 'success'
+        type: 'success',
       })
-      return updated
+      return data
     } catch (error) {
       const { addToast } = get()
       set({ error: (error as Error).message })
       addToast({
         title: 'Error',
         description: 'Failed to add item. Please try again.',
-        type: 'error'
+        type: 'error',
       })
       return null
     } finally {
@@ -167,24 +169,24 @@ export const useStore = create<Store>((set, get) => ({
 
       const { items, locations, updateLocation, addToast } = get()
       set({
-        items: items.map(item => item.id === id ? { ...item, ...data } : item)
+        items: items.map((item) => (item.id === id ? { ...item, ...data } : item)),
       })
 
       // Sync location if single location exists
-      const itemLocations = locations.filter(l => l.item_id === id)
+      const itemLocations = locations.filter((l) => l.item_id === id)
       if (itemLocations.length === 1) {
         const loc = itemLocations[0]
         if (loc.status !== data.status || loc.visited_at !== data.visited_at) {
           updateLocation(loc.id, {
             status: data.status,
-            visited_at: data.visited_at
+            visited_at: data.visited_at,
           })
         }
       }
       addToast({
         title: 'Updated!',
         description: `${data.name} has been updated successfully.`,
-        type: 'success'
+        type: 'success',
       })
     } catch (error) {
       const { addToast } = get()
@@ -192,7 +194,7 @@ export const useStore = create<Store>((set, get) => ({
       addToast({
         title: 'Error',
         description: 'Failed to update item. Please try again.',
-        type: 'error'
+        type: 'error',
       })
     } finally {
       set({ loading: false })
@@ -203,21 +205,18 @@ export const useStore = create<Store>((set, get) => ({
     try {
       set({ loading: true, error: null })
       const { items } = get()
-      const itemToDelete = items.find(item => item.id === id)
+      const itemToDelete = items.find((item) => item.id === id)
 
-      const { error } = await supabase
-        .from('items')
-        .delete()
-        .eq('id', id)
+      const { error } = await supabase.from('items').delete().eq('id', id)
 
       if (error) throw error
 
       const { addToast } = get()
-      set({ items: items.filter(item => item.id !== id) })
+      set({ items: items.filter((item) => item.id !== id) })
       addToast({
         title: 'Deleted!',
         description: `${itemToDelete?.name || 'Item'} has been deleted successfully.`,
-        type: 'success'
+        type: 'success',
       })
     } catch (error) {
       const { addToast } = get()
@@ -225,7 +224,7 @@ export const useStore = create<Store>((set, get) => ({
       addToast({
         title: 'Error',
         description: 'Failed to delete item. Please try again.',
-        type: 'error'
+        type: 'error',
       })
     } finally {
       set({ loading: false })
@@ -237,17 +236,14 @@ export const useStore = create<Store>((set, get) => ({
       set({
         types: [],
         loading: false,
-        error: 'Please configure your Supabase credentials in .env.local'
+        error: 'Please configure your Supabase credentials in .env.local',
       })
       return
     }
 
     try {
       set({ loading: true, error: null })
-      const { data, error } = await supabase
-        .from('types')
-        .select('*')
-        .order('name')
+      const { data, error } = await supabase.from('types').select('*').order('name')
 
       if (error) throw error
       set({ types: data || [] })
@@ -266,18 +262,25 @@ export const useStore = create<Store>((set, get) => ({
 
     try {
       set({ loading: true, error: null })
-      const { data, error } = await supabase
-        .from('types')
-        .insert(type)
-        .select()
-        .single()
+      const { data, error } = await supabase.from('types').insert(type).select().single()
 
       if (error) throw error
 
-      const { types } = get()
+      const { types, addToast } = get()
       set({ types: [...types, data].sort((a, b) => a.name.localeCompare(b.name)) })
+      addToast({
+        title: 'Type added!',
+        description: `"${data.name}" has been added successfully.`,
+        type: 'success',
+      })
     } catch (error) {
+      const { addToast } = get()
       set({ error: (error as Error).message })
+      addToast({
+        title: 'Error',
+        description: 'Failed to add type. Please try again.',
+        type: 'error',
+      })
     } finally {
       set({ loading: false })
     }
@@ -295,13 +298,25 @@ export const useStore = create<Store>((set, get) => ({
 
       if (error) throw error
 
-      const { types } = get()
+      const { types, addToast } = get()
       set({
-        types: types.map(type => type.id === id ? { ...type, ...data } : type)
-          .sort((a, b) => a.name.localeCompare(b.name))
+        types: types
+          .map((type) => (type.id === id ? { ...type, ...data } : type))
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      })
+      addToast({
+        title: 'Type updated!',
+        description: `"${data.name}" has been updated successfully.`,
+        type: 'success',
       })
     } catch (error) {
+      const { addToast } = get()
       set({ error: (error as Error).message })
+      addToast({
+        title: 'Error',
+        description: 'Failed to update type. Please try again.',
+        type: 'error',
+      })
     } finally {
       set({ loading: false })
     }
@@ -310,17 +325,28 @@ export const useStore = create<Store>((set, get) => ({
   deleteType: async (id) => {
     try {
       set({ loading: true, error: null })
-      const { error } = await supabase
-        .from('types')
-        .delete()
-        .eq('id', id)
+      const { types } = get()
+      const typeToDelete = types.find((t) => t.id === id)
+
+      const { error } = await supabase.from('types').delete().eq('id', id)
 
       if (error) throw error
 
-      const { types } = get()
-      set({ types: types.filter(type => type.id !== id) })
+      const { addToast } = get()
+      set({ types: types.filter((type) => type.id !== id) })
+      addToast({
+        title: 'Type deleted!',
+        description: `"${typeToDelete?.name || 'Type'}" has been deleted.`,
+        type: 'success',
+      })
     } catch (error) {
+      const { addToast } = get()
       set({ error: (error as Error).message })
+      addToast({
+        title: 'Error',
+        description: 'Failed to delete type. Please try again.',
+        type: 'error',
+      })
     } finally {
       set({ loading: false })
     }
@@ -339,7 +365,7 @@ export const useStore = create<Store>((set, get) => ({
 
       const { locations } = get()
       const updatedList = [...locations, data]
-      
+
       // Sort by visited_at desc (nulls first), then created_at desc
       const sortedList = updatedList.sort((a, b) => {
         // If both have visited_at, sort by date desc
@@ -352,7 +378,7 @@ export const useStore = create<Store>((set, get) => ({
         // If neither has visited_at, sort by created_at desc
         return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
       })
-      
+
       set({ locations: sortedList })
     } catch (error) {
       set({ error: (error as Error).message })
@@ -372,8 +398,8 @@ export const useStore = create<Store>((set, get) => ({
       if (error) throw error
 
       const { locations } = get()
-      const updatedList = locations.map(loc => loc.id === id ? { ...loc, ...data } : loc)
-      
+      const updatedList = locations.map((loc) => (loc.id === id ? { ...loc, ...data } : loc))
+
       // Sort by visited_at desc (nulls first), then created_at desc
       const sortedList = updatedList.sort((a, b) => {
         // If both have visited_at, sort by date desc
@@ -396,15 +422,12 @@ export const useStore = create<Store>((set, get) => ({
   deleteLocation: async (id) => {
     if (!hasValidCredentials) return
     try {
-      const { error } = await supabase
-        .from('item_locations')
-        .delete()
-        .eq('id', id)
+      const { error } = await supabase.from('item_locations').delete().eq('id', id)
 
       if (error) throw error
 
       const { locations } = get()
-      set({ locations: locations.filter(loc => loc.id !== id) })
+      set({ locations: locations.filter((loc) => loc.id !== id) })
     } catch (error) {
       set({ error: (error as Error).message })
     }
@@ -415,10 +438,12 @@ export const useStore = create<Store>((set, get) => ({
     try {
       set({ loading: true, error: null })
       const { items, locations, addLocation, addToast } = get()
-      
+
       // Find items that have legacy location but no entries in item_locations
-      const itemIdsWithLocations = new Set(locations.map(l => l.item_id))
-      const itemsToMigrate = items.filter(item => item.location && !itemIdsWithLocations.has(item.id))
+      const itemIdsWithLocations = new Set(locations.map((l) => l.item_id))
+      const itemsToMigrate = items.filter(
+        (item) => item.location && !itemIdsWithLocations.has(item.id)
+      )
 
       let count = 0
       for (const item of itemsToMigrate) {
@@ -430,25 +455,24 @@ export const useStore = create<Store>((set, get) => ({
           label: 'Main',
           url: item.location,
           status: item.status,
-          visited_at: item.visited_at
+          visited_at: item.visited_at,
         })
         count++
       }
-      
+
       if (count > 0) {
         addToast({
-            title: 'Migration Complete',
-            description: `Successfully migrated ${count} items to the new location structure.`,
-            type: 'success'
+          title: 'Migration Complete',
+          description: `Successfully migrated ${count} items to the new location structure.`,
+          type: 'success',
         })
       } else {
         addToast({
-            title: 'Migration Skipped',
-            description: 'No items needed migration.',
-            type: 'info'
+          title: 'Migration Skipped',
+          description: 'No items needed migration.',
+          type: 'info',
         })
       }
-      
     } catch (error) {
       set({ error: (error as Error).message })
     } finally {
@@ -461,31 +485,37 @@ export const useStore = create<Store>((set, get) => ({
     try {
       const { items, locations, updateLocation, addToast } = get()
       let count = 0
-      
+
       for (const item of items) {
-        const itemLocs = locations.filter(l => l.item_id === item.id)
+        const itemLocs = locations.filter((l) => l.item_id === item.id)
         if (itemLocs.length === 1) {
           const loc = itemLocs[0]
           // If item says visited but location says not, sync it.
           if (item.status && !loc.status) {
             await updateLocation(loc.id, {
               status: true,
-              visited_at: item.visited_at
+              visited_at: item.visited_at,
             })
             count++
           }
         }
       }
-      
+
       if (count > 0) {
         addToast({
           title: 'Data Synced',
           description: `Synced visit status for ${count} items.`,
-          type: 'success'
+          type: 'success',
         })
       }
     } catch (error) {
+      const { addToast } = get()
+      addToast({
+        title: 'Error',
+        description: 'Failed to sync data. Please try again.',
+        type: 'error',
+      })
       console.error('Sync failed:', error)
     }
-  }
+  },
 }))

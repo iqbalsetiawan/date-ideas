@@ -33,8 +33,6 @@ export function filterLabelSuggestions(
   max = LABEL_SUGGESTION_PANEL_MAX
 ): string[] {
   const q = query.trim().toLowerCase()
-  const base = q
-    ? sortedLabels.filter((s) => s.toLowerCase().includes(q))
-    : sortedLabels
+  const base = q ? sortedLabels.filter((s) => s.toLowerCase().includes(q)) : sortedLabels
   return [...base].sort((a, b) => a.localeCompare(b)).slice(0, max)
 }

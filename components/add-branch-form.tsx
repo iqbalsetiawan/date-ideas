@@ -2,8 +2,22 @@
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
-import { Form, FormField, FormItem, FormLabel as RHFLabel, FormControl, FormMessage } from '@/components/ui/form'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel as RHFLabel,
+  FormControl,
+  FormMessage,
+} from '@/components/ui/form'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { branchSchema, type BranchFormValues } from '@/lib/validation'
@@ -28,17 +42,17 @@ export function AddBranchForm({ open, onOpenChange, item }: AddBranchFormProps) 
     mode: 'onSubmit',
   })
 
-  const resetValues = useMemo<BranchFormValues>(() => ({
-    label: '',
-    url: '',
-  }), [])
-  
+  const resetValues = useMemo<BranchFormValues>(
+    () => ({
+      label: '',
+      url: '',
+    }),
+    []
+  )
+
   useResetOnOpen(form, open, resetValues)
 
-  const sortedLocationLabels = useMemo(
-    () => getSortedLocationLabels(locations),
-    [locations]
-  )
+  const sortedLocationLabels = useMemo(() => getSortedLocationLabels(locations), [locations])
 
   const onSubmit = async (values: BranchFormValues) => {
     try {
@@ -58,9 +72,7 @@ export function AddBranchForm({ open, onOpenChange, item }: AddBranchFormProps) 
       <DialogContent className="sm:max-w-[425px] gap-3 p-4 sm:p-5 overflow-visible">
         <DialogHeader className="space-y-1">
           <DialogTitle>Add Branch</DialogTitle>
-          <DialogDescription className="text-xs leading-snug">
-            For {item.name}.
-          </DialogDescription>
+          <DialogDescription className="text-xs leading-snug">For {item.name}.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">

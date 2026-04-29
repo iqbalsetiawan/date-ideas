@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 /* dark: utilities stay in components but never match (no dark mode in app). */
 @custom-variant dark (&:is(.dark-never *));

@@ -11,10 +11,11 @@ A simple web app to track places to visit and food to try.
 ## Quick Start
 
 1. **Clone and install**
+
    ```bash
    git clone https://github.com/iqbalsetiawan/date-ideas.git
    cd date-ideas
-   npm install
+   pnpm install
    ```
 
 2. **Set up database**
@@ -23,18 +24,21 @@ A simple web app to track places to visit and food to try.
    - Get your project URL and API key from Settings > API
 
 3. **Add environment variables**
-   Create `.env.local`:
+   Copy `.env.local.example` to `.env.local` and fill in your values:
+
    ```
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-   NEXT_PUBLIC_APP_URL=https://date-ideas-two.vercel.app
+   NEXT_PUBLIC_APP_URL=http://localhost:5173
    ```
+
+   > For production, set `NEXT_PUBLIC_APP_URL` to your deployed URL (e.g. `https://your-app.vercel.app`).
 
 4. **Run the app**
    ```bash
-   npm run dev
+   pnpm dev
    ```
-   Open [http://localhost:3000](http://localhost:3000)
+   Open [http://localhost:5173](http://localhost:5173)
 
 ## How to Use
 

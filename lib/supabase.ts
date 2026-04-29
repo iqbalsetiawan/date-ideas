@@ -19,18 +19,21 @@ export type Database = {
           id: number
           name: string
           category: 'food' | 'place'
+          color?: string | null
           created_at: string
         }
         Insert: {
           id?: number
           name: string
           category: 'food' | 'place'
+          color?: string | null
           created_at?: string
         }
         Update: {
           id?: number
           name?: string
           category?: 'food' | 'place'
+          color?: string | null
           created_at?: string
         }
       }
@@ -40,9 +43,9 @@ export type Database = {
           name: string
           type_id: number
           location: string
+          notes: string | null
           status: boolean
           visited_at: string | null
-          position: number | null
           category: 'food' | 'place'
           created_at: string
         }
@@ -51,9 +54,9 @@ export type Database = {
           name: string
           type_id: number
           location: string
+          notes?: string | null
           status?: boolean
           visited_at?: string | null
-          position?: number | null
           category: 'food' | 'place'
           created_at?: string
         }
@@ -62,9 +65,9 @@ export type Database = {
           name?: string
           type_id?: number
           location?: string
+          notes?: string | null
           status?: boolean
           visited_at?: string | null
-          position?: number | null
           category?: 'food' | 'place'
           created_at?: string
         }
@@ -77,7 +80,6 @@ export type Database = {
           url: string
           status: boolean
           visited_at: string | null
-          position: number | null
           created_at: string
         }
         Insert: {
@@ -87,7 +89,6 @@ export type Database = {
           url: string
           status?: boolean
           visited_at?: string | null
-          position?: number | null
           created_at?: string
         }
         Update: {
@@ -97,7 +98,6 @@ export type Database = {
           url?: string
           status?: boolean
           visited_at?: string | null
-          position?: number | null
           created_at?: string
         }
       }

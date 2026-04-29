@@ -27,7 +27,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Error caught by boundary:', error, errorInfo)
-    
+
     // In production, you might want to log this to an error reporting service
     // like Sentry, LogRocket, etc.
   }
@@ -64,7 +64,7 @@ function DefaultErrorFallback({ error, resetError }: { error?: Error; resetError
           <p className="text-center text-muted-foreground">
             We&apos;re sorry, but something unexpected happened. Please try refreshing the page.
           </p>
-          
+
           {process.env.NODE_ENV === 'development' && error && (
             <details className="mt-4">
               <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
@@ -76,15 +76,13 @@ function DefaultErrorFallback({ error, resetError }: { error?: Error; resetError
               </pre>
             </details>
           )}
-          
+
           <div className="flex gap-2 justify-center">
             <Button onClick={resetError} variant="outline">
               <RefreshCw className="h-4 w-4 mr-2" />
               Try Again
             </Button>
-            <Button onClick={() => window.location.reload()}>
-              Refresh Page
-            </Button>
+            <Button onClick={() => window.location.reload()}>Refresh Page</Button>
           </div>
         </CardContent>
       </Card>

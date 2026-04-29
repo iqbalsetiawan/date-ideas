@@ -6,17 +6,38 @@ import { Item, Type } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { getSortedLocationLabels } from '@/lib/location-label-suggestions'
 import { LabelSuggestInput } from '@/components/label-suggest-input'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Form, FormField, FormItem, FormLabel as RHFLabel, FormControl, FormMessage } from '@/components/ui/form'
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel as RHFLabel,
+  FormControl,
+  FormMessage,
+} from '@/components/ui/form'
 import { itemSchema, type ItemFormValues } from '@/lib/validation'
 import { useResetOnOpen } from '@/lib/forms'
 import { Plus, Trash2 } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
 
 interface ItemFormProps {
   open: boolean
@@ -27,55 +48,57 @@ interface ItemFormProps {
 }
 
 export function ItemForm({ open, onOpenChange, category, types, item }: ItemFormProps) {
-  const { addItem, updateItem, loading, locations, addLocation, updateLocation, deleteLocation } = useStore()
-  
+  const { addItem, updateItem, loading, locations, addLocation, updateLocation, deleteLocation } =
+    useStore()
+
   const form = useForm<ItemFormValues>({
     resolver: zodResolver(itemSchema),
-    defaultValues: { 
-      name: '', 
-      type_id: '', 
-      locations: [{ label: '', url: '' }], 
-      status: false, 
-      visited_at: '' 
+    defaultValues: {
+      name: '',
+      type_id: '',
+      notes: '',
+      locations: [{ label: '', url: '' }],
+      status: false,
+      visited_at: '',
     },
     mode: 'onSubmit',
   })
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "locations"
-  });
+    name: 'locations',
+  })
 
   const watchedLocations = form.watch('locations') || []
   const multipleLocations = watchedLocations.length > 1
 
-  const sortedLocationLabels = useMemo(
-    () => getSortedLocationLabels(locations),
-    [locations]
-  )
+  const sortedLocationLabels = useMemo(() => getSortedLocationLabels(locations), [locations])
 
   const resetValues = useMemo<ItemFormValues>(() => {
     if (!item) {
-      return { 
-        name: '', 
-        type_id: '', 
-        locations: [{ label: '', url: '' }], 
-        status: false, 
-        visited_at: '' 
+      return {
+        name: '',
+        type_id: '',
+        notes: '',
+        locations: [{ label: '', url: '' }],
+        status: false,
+        visited_at: '',
       }
     }
 
-    const itemLocations = locations.filter(l => l.item_id === item.id)
-    const formLocations = itemLocations.length > 0 
-      ? itemLocations.map(l => ({ id: l.id, label: l.label, url: l.url }))
-      : [{ label: '', url: item.location }]
+    const itemLocations = locations.filter((l) => l.item_id === item.id)
+    const formLocations =
+      itemLocations.length > 0
+        ? itemLocations.map((l) => ({ id: l.id, label: l.label, url: l.url }))
+        : [{ label: '', url: item.location }]
 
     return {
       name: item.name,
       type_id: item.type_id.toString(),
+      notes: item.notes || '',
       locations: formLocations,
       status: item.status,
-      visited_at: item.visited_at || ''
+      visited_at: item.visited_at || '',
     }
   }, [item, locations])
 
@@ -88,7 +111,39 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
       url: (l.url ?? '').trim(),
     }))
     const primaryLocation = normalizedLocs[0]?.url ?? ''
-    const isMulti = values.locations.length > 1
+    const isMultiForm = values.locations.length > 1
+
+    const persistableLocation = (l: (typeof normalizedLocs)[0]) => !!(l.url || l.label)
+
+    /** When merging multiple DB branches into one row, item.status must follow the surviving branch (multi-branch items keep item.status false in the DB). */
+    const resolveItemVisitFieldsForUpdate = (
+      editItem: Item
+    ): { status: boolean; visited_at: string | null } => {
+      if (isMultiForm) return { status: false, visited_at: null }
+
+      const currentLocations = locations.filter((l) => l.item_id === editItem.id)
+      if (currentLocations.length > 1) {
+        const sole = normalizedLocs[0]
+        const existing = sole.id ? currentLocations.find((l) => l.id === sole.id) : undefined
+        if (existing) {
+          return {
+            status: !!existing.status,
+            visited_at: existing.status ? (existing.visited_at ?? null) : null,
+          }
+        }
+      }
+      return {
+        status: values.status,
+        visited_at: values.status ? values.visited_at || null : null,
+      }
+    }
+
+    const { status: itemStatus, visited_at: itemVisitedAt } = item
+      ? resolveItemVisitFieldsForUpdate(item)
+      : {
+          status: isMultiForm ? false : values.status,
+          visited_at: isMultiForm ? null : values.status ? values.visited_at || null : null,
+        }
 
     try {
       if (item) {
@@ -97,59 +152,60 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
           name: values.name,
           type_id: parseInt(values.type_id),
           location: primaryLocation,
-          status: isMulti ? false : values.status,
-          visited_at: isMulti ? null : (values.status ? values.visited_at || null : null),
-        });
+          notes: values.notes || null,
+          status: isMultiForm ? false : itemStatus,
+          visited_at: isMultiForm ? null : itemStatus ? itemVisitedAt : null,
+        })
 
         // Handle Locations
-        const currentLocations = locations.filter(l => l.item_id === item.id);
-        
+        const currentLocations = locations.filter((l) => l.item_id === item.id)
+
         // Identify deletions
-        const formLocationIds = normalizedLocs.map(l => l.id).filter(Boolean) as number[];
-        const toDelete = currentLocations.filter(l => !formLocationIds.includes(l.id));
+        const formLocationIds = normalizedLocs.map((l) => l.id).filter(Boolean) as number[]
+        const toDelete = currentLocations.filter((l) => !formLocationIds.includes(l.id))
         for (const loc of toDelete) {
-          await deleteLocation(loc.id);
+          await deleteLocation(loc.id)
         }
 
         // Identify updates and additions
         for (const loc of normalizedLocs) {
           if (loc.id) {
             // Update
-            const existing = currentLocations.find(l => l.id === loc.id);
+            const existing = currentLocations.find((l) => l.id === loc.id)
             if (existing && (existing.label !== loc.label || existing.url !== loc.url)) {
-              await updateLocation(loc.id, { label: loc.label, url: loc.url });
+              await updateLocation(loc.id, { label: loc.label, url: loc.url })
             }
-          } else if (loc.url) {
-            // Add — only persist rows with a URL (avoids empty duplicate branches)
+          } else if (persistableLocation(loc)) {
+            // Add — persist when area and/or map link is set (avoids fully empty duplicate branches)
             await addLocation({
               item_id: item.id,
               label: loc.label,
               url: loc.url,
-              status: false
-            });
+              status: false,
+            })
           }
         }
-
       } else {
         // Create Item
         const newItem = await addItem({
           name: values.name,
           type_id: parseInt(values.type_id),
           location: primaryLocation,
-          status: isMulti ? false : values.status,
-          visited_at: isMulti ? null : (values.status ? values.visited_at || null : null),
+          notes: values.notes || null,
+          status: isMultiForm ? false : values.status,
+          visited_at: isMultiForm ? null : values.status ? values.visited_at || null : null,
           category,
-        });
+        })
 
         if (newItem) {
           for (const loc of normalizedLocs) {
-            if (loc.url) {
+            if (persistableLocation(loc)) {
               await addLocation({
                 item_id: newItem.id,
                 label: loc.label,
                 url: loc.url,
-                status: false
-              });
+                status: false,
+              })
             }
           }
         }
@@ -168,7 +224,9 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
             {item ? 'Edit' : 'Add New'} {category === 'food' ? 'Food' : 'Place'}
           </DialogTitle>
           <DialogDescription className="text-xs leading-snug">
-            {item ? 'Update the details for this entry.' : 'Fill in the details to add it to your list.'}
+            {item
+              ? 'Update the details for this entry.'
+              : 'Fill in the details to add it to your list.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -207,6 +265,25 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <RHFLabel>Notes (optional)</RHFLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Any notes about this place…"
+                      rows={2}
+                      className="resize-none"
+                      {...field}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -256,7 +333,7 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
                       control={form.control}
                       name={`locations.${index}.url`}
                       render={({ field }) => (
-                        <FormItem className="flex-[2] min-w-0">
+                        <FormItem className="flex-2 min-w-0">
                           <FormControl>
                             <Input placeholder="Google Maps URL (optional)" {...field} />
                           </FormControl>
@@ -280,7 +357,8 @@ export function ItemForm({ open, onOpenChange, category, types, item }: ItemForm
                 ))}
               </div>
               <FormMessage>
-                {form.formState.errors.locations?.message || form.formState.errors.locations?.root?.message}
+                {form.formState.errors.locations?.message ||
+                  form.formState.errors.locations?.root?.message}
               </FormMessage>
             </div>
 
